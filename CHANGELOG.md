@@ -1,4 +1,10 @@
 # Changelog
+## 2026-11-11 — Context-sync roadmap M2–M5: evidence-gated implementation
+- [PR #12](https://github.com/riccardopinato/App-Factory-Agent-Core/pull/12) merged `32d4d41a3774d465c28056de7dfb83469c631d06`: pure offline retry/reconciliation/privacy/semantic-review helpers with green tests; no production runner integration.
+- Added recovery playbook, semantic-diff review protocol and reuse admission candidate; no Golden, donor or CAP auto promotion.
+- [Ideas #97](https://github.com/riccardopinato/Idee-app-Archivi-riferimenti/pull/97) merged with privacy-safe 35-repo registry and Site source view. No Site deploy or automatic data refresh claimed.
+- Open: four repo admin PR permissions, actual schedule/dispatch, integration/fault injection, second independent consumer, real cost/quote measurement.
+
 ## 2026-11-11 — Reconciliation identity corrected and proved on real Actions run
 - [PR #8](https://github.com/riccardopinato/App-Factory-Agent-Core/pull/8): bot `git config` moved before merge, CI green.
 - [run #43052705998](https://github.com/riccardopinato/App-Factory-Agent-Core/actions/runs/43052705998): merge of bot branch with advanced main succeeded, snapshot write/check PASS, branch push PASS. Only `createPullRequest` denied by repository Actions setting. [Cleanup #10](https://github.com/riccardopinato/App-Factory-Agent-Core/pull/10) removed temporary scoped push trigger.
