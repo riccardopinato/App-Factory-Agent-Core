@@ -2,7 +2,13 @@
 
 > Generato da `scripts/sync_context.py`. Raccoglie solo commit GitHub; NON certifica codice, CI, sicurezza, provider, dispositivo o pubblicazione.
 
-**In attesa della prima esecuzione autorizzata del workflow.**
+| Repository | Utilizzo | Branch | SHA | Data commit (UTC) |
+|---|---|---|---|---|
+| [riccardopinato/App-Factory-Core](https://github.com/riccardopinato/App-Factory-Core) | Governance Master e Golden | `main` | [`c5adc147046b`](https://github.com/riccardopinato/App-Factory-Core/commit/c5adc147046beb7024629466d10eeb799c3c2619) | 2026-11-11T12:33:47Z |
+| [riccardopinato/AppLab](https://github.com/riccardopinato/AppLab) | QA e affidabilità agentica | `main` | [`2d57d9cea85a`](https://github.com/riccardopinato/AppLab/commit/2d57d9cea85ac03016b24e103046e47b6f02acb5) | 2026-11-11T12:37:48Z |
+| [riccardopinato/Idee-app-Archivi-riferimenti](https://github.com/riccardopinato/Idee-app-Archivi-riferimenti) | Idee e capability | `main` | [`c2a1aa397668`](https://github.com/riccardopinato/Idee-app-Archivi-riferimenti/commit/c2a1aa39766828d60ec5994f489f268a4a9c8bf8) | 2026-11-11T13:51:43Z |
+
+I cambiamenti indicano nuovi commit, non modifiche automaticamente approvate o importate nei moduli.
 
 ## Vincoli di aggiornamento
 
