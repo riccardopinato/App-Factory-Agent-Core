@@ -1,4 +1,10 @@
 # Changelog
+## 2026-11-11 — Context snapshot E2E canary: PASS partial, admin blocker
+- Live [run 43040897071](https://github.com/riccardopinato/App-Factory-Agent-Core/actions/runs/43040897071) completed HTTP upstream read, `CONTEXT_SNAPSHOT_WRITE_PASS`, `CONTEXT_SNAPSHOT_CHECK_PASS`, committed and pushed `automation/context-snapshot`, but failed `gh pr create` due GitHub Actions permission.
+- Comparison: `btrader` bot [PR #5](https://github.com/riccardopinato/btrader/pull/5) was successfully created by github-actions[bot] and rerun without duplication. 5 canary jobs/branch snapshots proved, 4 PR permissions blocked.
+- Canary `on.push` removed from workflow after tests; cron/dispatch not run. See [central evidence report](https://github.com/riccardopinato/Idee-app-Archivi-riferimenti/blob/main/18-AGENT-FACTORY/EVIDENCE_M1_CONTEXT_SYNC_CANARY_2026-11-11.md).
+- No local Windows agent import/verification or source code changes.
+
 ## 2026-11-11 — 35-repo context-sync rollout (infrastructure lane)
 - GitHub Actions workflow metadata-only merged in the default branch of all 35 owner repositories; original Agent/Finance/Scene context-snapshot workflows hardened.
 - Real schedule/dispatch, bot-authored snapshot PR and permission recovery remain NOT_VERIFIED; PR CI checks do not certify scheduled runtime.
