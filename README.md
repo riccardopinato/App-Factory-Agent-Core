@@ -24,6 +24,12 @@ Consumers proposti: Developer Agent, QA Agent, Research/Donor Agent, Finance Age
 - **PROPOSTO:** worker multi-repo affidabile, tool adapters, test reali, PR, build, recovery e uso in Finance.
 - **ESCLUSO:** esecuzione di trading live, merge non autorizzato, rilancio autonomo di ChatGPT senza runner, accesso incontrollato ai file/secret.
 
+## Affidabilità e riuso (11/11/2026)
+- [Helper offline di reconciliation](scripts/context_reliability.py), con test negativi in [tests/test_context_reliability.py](tests/test_context_reliability.py), CI verde [PR #12](https://github.com/riccardopinato/App-Factory-Agent-Core/pull/12).
+- [Recovery/rollback playbook](docs/CONTEXT_SYNC_RECOVERY_PLAYBOOK.md), [protocollo review semantica](docs/SEMANTIC_REVIEW_PROTOCOL.md) e [candidate admission](docs/CONTEXT_SYNC_REUSE_ADMISSION.md). Nessun Golden promosso.
+- [Dashboard fonte flotta](https://github.com/riccardopinato/Idee-app-Archivi-riferimenti/blob/main/16-APP-FACTORY-SITE/data/context_fleet.json): 35 slot, stati separati; deploy del Site non verificato.
+- Limiti: 4 permessi PR admin ancora bloccanti; nessuna esecuzione `schedule`/`workflow_dispatch` del contesto osservata; nessun codice Windows locale importato.
+
 ## Automazione
 Un cron GitHub Actions controlla gli SHA di Core/Ideas/AppLab, aggiorna SOLO il file snapshot in una PR. Non può accedere al PC Windows spento né completare il coding agent. Per i requisiti di autorizzazione e limitazioni: [AUTO_UPDATE_POLICY](docs/AUTO_UPDATE_POLICY.md).
 
