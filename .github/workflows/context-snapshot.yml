@@ -1,3 +1,4 @@
+# Golden SHA pin + branch/PR reconciliation v2
 name: Context snapshot (PR only)
 on:
   schedule:
@@ -13,35 +14,43 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
       - name: Update only metadata snapshot on bot-owned branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BASE_BRANCH: ${{ github.event.repository.default_branch }}
         shell: bash
         run: |
           set -euo pipefail
-          git fetch origin main
+          git fetch origin "$BASE_BRANCH"
           if git ls-remote --exit-code --heads origin automation/context-snapshot >/dev/null; then
             git fetch origin automation/context-snapshot
             git switch --track -c automation/context-snapshot origin/automation/context-snapshot
-            git merge --no-edit origin/main
+            git merge --no-edit "origin/${BASE_BRANCH}"
           else
-            git switch -c automation/context-snapshot
+            git switch -c automation/context-snapshot "origin/${BASE_BRANCH}"
           fi
           python3 scripts/sync_context.py --write
           python3 scripts/sync_context.py --check
-          if git diff --quiet -- docs/AUTO_CONTEXT.json docs/AUTO_CONTEXT.md; then
-            echo "NO_DIFF: no update necessary"
-            exit 0
-          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/AUTO_CONTEXT.json docs/AUTO_CONTEXT.md
-          git commit -m "chore(context): refresh observed upstream commits"
-          git push origin HEAD:refs/heads/automation/context-snapshot
+          git add -- docs/AUTO_CONTEXT.json docs/AUTO_CONTEXT.md
+          if git diff --cached --quiet; then
+            echo "SNAPSHOT_UNCHANGED"
+          else
+            git commit -m "chore(context): refresh observed upstream commits"
+          fi
+          REMOTE_HEAD="$(git ls-remote origin refs/heads/automation/context-snapshot | awk '{print $1}')"
+          if [ "$(git rev-parse HEAD)" != "$REMOTE_HEAD" ]; then
+            git push origin HEAD:refs/heads/automation/context-snapshot
+          fi
+          if git diff --quiet "origin/${BASE_BRANCH}" HEAD -- docs/AUTO_CONTEXT.json docs/AUTO_CONTEXT.md; then
+            echo "NO_OP: no snapshot delta versus base"
+            exit 0
+          fi
           if [ -z "$(gh pr list --head automation/context-snapshot --state open --json number --jq '.[0].number // empty')" ]; then
             gh pr create --head automation/context-snapshot --base main --title "chore(context): observed upstream changes" --body "Automated GitHub metadata only. Review source deltas before updating narrative, product scope, Donor/Golden or code. Do not mistake SHA change for CI/device verification."
           fi
