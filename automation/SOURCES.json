@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "repositories": [
+    {
+      "full_name": "riccardopinato/App-Factory-Core",
+      "purpose": "Governance Master e Golden"
+    },
+    {
+      "full_name": "riccardopinato/Idee-app-Archivi-riferimenti",
+      "purpose": "Idee e capability"
+    },
+    {
+      "full_name": "riccardopinato/AppLab",
+      "purpose": "QA e affidabilità agentica"
+    }
+  ]
+}
