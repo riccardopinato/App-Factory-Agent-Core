@@ -6,7 +6,11 @@ Stato iniziale 11/11/2026: plan, source locale non importato. Ogni voce `[ ]` è
 
 - [x] Workflow GitHub Actions con schedule UTC, `workflow_dispatch`, metadata SHA dei repository upstream, snapshot documentale e PR-only; 32 rollout nuovi + 3 workflow originali Agent/Finance/Scene irrobustiti.
 - [x] Pin dell'Action `actions/checkout` coerente con Golden corrente; v2 con recovery PR no-op, avvio da default branch e job name specifico.
-- [ ] **P0 NEXT:** test reale `workflow_dispatch`/primo `schedule`, PR automatica e recovery del token su canary pubblico, privato, `master` e regole rigide.
+- [x] **M1 LIVE 2026-11-11:** cinque esecuzioni `event=push` vere su pubblico, privato, `master`, questo workflow originale e repo ruleset; snapshot e bot-owned branches corretti. Nel presente repository [run #43040897071](https://github.com/riccardopinato/App-Factory-Agent-Core/actions/runs/43040897071): `CONTEXT_SNAPSHOT_WRITE_PASS` e `CHECK_PASS`, poi blocco su create PR.
+- [x] **M1 E2E parziale:** [btrader Actions run](https://github.com/riccardopinato/btrader/actions/runs/43040885976) ha creato [PR #5](https://github.com/riccardopinato/btrader/pull/5) come `github-actions[bot]`, con rerun idempotente (nessun duplicato). Tutti i push temporanei di collaudo rimossi tramite CI+PR.
+- [ ] **P0 BLOCKED:** impostazione repo-specifica `Allow GitHub Actions to create and approve pull requests` mancante in quattro canary, incluso questo repo. Dopo abilitazione admin verificare rerun, creation PR bot e recovery della branch già pubblicata.
+- [ ] **P0 NOT_VERIFIED:** veri `workflow_dispatch` e `schedule` non avviati/osservati; non attribuire i successi push a cron. Test estesi sui rimanenti 30 repo non eseguiti.
+
 - [ ] **P0:** fault injection e test retry/rate-limit/branch divergence/permessi per 35 repo.
 - [ ] **P1:** inventario centrale `last_run / last_success / PR / blocked_reason` con source provenance, senza doppie fonti di verità.
 - [ ] **P1:** riconciliazione documentale semantica supervisionata con diff/test, separata dall'osservazione SHA.
