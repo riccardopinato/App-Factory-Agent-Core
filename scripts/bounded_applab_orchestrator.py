@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import math
 import time
+from copy import deepcopy
 from typing import Any, Callable
 
 try:
@@ -209,7 +210,39 @@ class BoundedAppLabOrchestrator:
             or intent["work_item"].get("repository") != job["target"]["repository"]
             or intent["work_item"].get("resolved_sha") != job["target"]["source_sha"]):
             raise OrchestrationError("INVALID_PATCH_INTENT")
-        self._bound(job, intent["operation_id"])
+        operation = self._bound(job, intent["operation_id"])
+        # An intent is caller-carried mutable data. Source/operation binding
+        # does not authenticate its WorkItem or authority envelope. Recreate
+        # the canonical WorkItem from the trusted pinned AppLab factory and
+        # pass THAT copy to the worker, never the mutable caller reference.
+        expected_id = "wrk_x10_" + hashlib.sha256(
+            (intent["operation_id"] + ":" + job_digest(job)).encode("utf-8")
+        ).hexdigest()[:24]
+        trusted_work_item = self.work_item_factory(
+            operation, work_item_id=expected_id,
+            allow_code_edit=True, allow_draft_pr_steward=False,
+        )
+        if (not isinstance(trusted_work_item, dict)
+            or trusted_work_item.get("record_type") != "APPLAB_WORK_ITEM"
+            or trusted_work_item.get("work_item_id") != expected_id
+            or trusted_work_item.get("operation_id") != intent["operation_id"]
+            or trusted_work_item.get("repository") != job["target"]["repository"]
+            or trusted_work_item.get("resolved_sha") != job["target"]["source_sha"]
+            or trusted_work_item.get("authority") != "ORCHESTRATION_ONLY"
+            or intent["work_item"] != trusted_work_item):
+            raise OrchestrationError("WORKGRAPH_INTENT_TAMPERED")
+        envelope = trusted_work_item.get("authority_envelope")
+        allowed = envelope.get("allowed_capabilities") if isinstance(envelope, dict) else None
+        if (not isinstance(allowed, list)
+            or "ALLOW_CODE_EDIT" not in allowed
+            or any(c in allowed for c in (
+                "CREATE_DRAFT_PR", "UPDATE_DRAFT_PR",
+                "MERGE_PR", "PUBLISH_RELEASE", "DEPLOY_PRODUCTION",
+            ))):
+            raise OrchestrationError("WORKGRAPH_PRIVILEGE_ESCALATION")
+        # Independent local snapshot, no reference to untrusted intent
+        # passes through the delegated preflight/worker callback.
+        trusted_work_item = deepcopy(trusted_work_item)
         # Real clock; a stale caller-controlled timestamp cannot reauthorize a
         # queued/cancelled operation after a lease has expired or been reassigned.
         self._require_live_app_lab_lease(
@@ -239,7 +272,7 @@ class BoundedAppLabOrchestrator:
         result = propose_in_applab_workspace(
             job, policy, receipt=receipt, verifier_key=verifier_key,
             repo_root=repo_root, patch_path=patch_path,
-            work_item=intent["work_item"], investigation=investigation,
+            work_item=trusted_work_item, investigation=investigation,
             attempt_number=attempt_number, bounded_worker=fenced_worker,
         )
         return {**result, "operation_id": intent["operation_id"],
