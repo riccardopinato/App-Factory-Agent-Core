@@ -134,6 +134,30 @@ class AgentPRAdapterTests(unittest.TestCase):
             self.propose(trusted_operation_loader=forged)
         self.run.assert_not_called()
 
+    def test_existing_runtime_merge_release_names_rejected(self):
+        for privileged in ("MERGE_PR", "PUBLISH_RELEASE", "DEPLOY_PRODUCTION"):
+            with self.subTest(privileged=privileged):
+                def forged(op, digest):
+                    x = trusted(op, digest)
+                    x["work_item"]["authority_envelope"]["allowed_capabilities"].append(privileged)
+                    return x
+                with self.assertRaisesRegex(AgentPRGateError, "DRAFT_PR_CAPABILITY_DENIED"):
+                    self.propose(trusted_operation_loader=forged)
+        self.run.assert_not_called()
+
+    def test_signed_single_attempt_budget_blocks_second_attempt(self):
+        import copy
+        job = copy.deepcopy(JOB)
+        job["limits"]["max_attempts"] = 1
+        def retry_loader(op, digest):
+            x = trusted(op, digest)
+            x["repair_result"]["attempt_number"] = 2
+            return x
+        with self.assertRaisesRegex(AgentPRGateError, "RETRY_BUDGET_EXCEEDED"):
+            self.propose(job=job, receipt=approved(job), chain_attempt_number=2,
+                         trusted_operation_loader=retry_loader)
+        self.run.assert_not_called()
+
     def test_diff_sha_tamper_rejected(self):
         self.patch.write_bytes(b"tampered patch")
         with self.assertRaisesRegex(AgentPRGateError, "PATCH_PROVENANCE_MISMATCH"):

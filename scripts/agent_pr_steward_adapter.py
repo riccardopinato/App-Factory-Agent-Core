@@ -24,6 +24,7 @@ STATES = frozenset({"DRAFT_PR_CREATED", "DRAFT_PR_UPDATED"})
 FORBIDDEN = frozenset({
     "SELF_APPROVE", "SELF_MERGE", "RELEASE", "WRITE_MAIN", "WRITE_FACTORY_CORE",
     "READ_SECRETS", "EDIT_WORKFLOW", "EDIT_BRANCH_PROTECTION", "WEAKEN_TESTS",
+    "MERGE_PR", "PUBLISH_RELEASE", "DEPLOY_PRODUCTION",
 })
 
 
@@ -59,7 +60,8 @@ def propose_draft_pr(
              "TRUSTED_PR_APPROVAL_REQUIRED")
     _require(isinstance(operation_id, str) and OP_ID.fullmatch(operation_id) is not None,
              "INVALID_OPERATION_ID")
-    _require(type(chain_attempt_number) is int and chain_attempt_number in (1, 2),
+    _require(type(chain_attempt_number) is int and chain_attempt_number in (1, 2)
+             and chain_attempt_number <= job["limits"]["max_attempts"],
              "RETRY_BUDGET_EXCEEDED")
     _require(target_base_branch == "main", "BASE_BRANCH_NOT_ALLOWED")
     _require(isinstance(title, str) and 5 <= len(title) <= 160
