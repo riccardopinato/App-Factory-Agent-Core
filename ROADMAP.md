@@ -1,3 +1,7 @@
+## X10-013 — bounded orchestration source adapter (12/11/2026)
+- [x] Gateway+queue+WorkGraph composition in source, replay & lease safety fixtures; no PR/release authority.
+- [ ] Real trusted delivery binding/Windows runtime, pinning actual AppLab install, end-to-end crash+recovery and real consumer test evidence (X10-014/015).
+
 # Roadmap — AGF-2026-001
 Stato iniziale 11/11/2026: plan, source locale non importato. Ogni voce `[ ]` è aperta.
 
