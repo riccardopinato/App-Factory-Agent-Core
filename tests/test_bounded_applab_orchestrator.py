@@ -226,6 +226,60 @@ class OrchestratorTests(unittest.TestCase):
                     attempt_number=1, bounded_worker=lambda *a, **k: calls.append("executed"))
         self.assertEqual(calls, [])
 
+    def test_mutated_work_item_authority_is_rejected_before_patch_worker(self):
+        write = copy.deepcopy(JOB)
+        write["mode"] = "propose_diff"
+        orch = BoundedAppLabOrchestrator(
+            AppLabQueueBridge(self.store, self.queue),
+            binding_verifier=lambda digest, opid, op: digest == job_digest(write),
+            work_item_factory=graph_factory)
+        self.store.op["current_state"] = "READY"
+        proof = receipt(write)
+        intent = orch.prepare_claim(write, POLICY, "op_x10", self.claim, now_ts=1,
+                                    receipt=proof, verifier_key=KEY)
+        calls = []
+        intent["work_item"]["authority_envelope"]["allowed_capabilities"].append(
+            "CREATE_DRAFT_PR")
+        with self.assertRaisesRegex(OrchestrationError, "WORKGRAPH_INTENT_TAMPERED"):
+            orch.propose_bounded_patch(
+                intent, write, POLICY, receipt=proof, verifier_key=KEY,
+                repo_root=None, patch_path=None, investigation={},
+                attempt_number=1, bounded_worker=lambda *a, **k: calls.append("ran"))
+        self.assertEqual(calls, [])
+
+    def test_work_item_modified_during_preflight_does_not_escalate_worker(self):
+        write = copy.deepcopy(JOB)
+        write["mode"] = "propose_diff"
+        orch = BoundedAppLabOrchestrator(
+            AppLabQueueBridge(self.store, self.queue),
+            binding_verifier=lambda digest, opid, op: digest == job_digest(write),
+            work_item_factory=graph_factory)
+        self.store.op["current_state"] = "READY"
+        proof = receipt(write)
+        intent = orch.prepare_claim(write, POLICY, "op_x10", self.claim, now_ts=1,
+                                    receipt=proof, verifier_key=KEY)
+        calls = []
+        def simulate_preflight_then_execute(*args, work_item, bounded_worker, **kw):
+            intent["work_item"]["authority_envelope"]["allowed_capabilities"].append(
+                "CREATE_DRAFT_PR")
+            # Delegated work item is an independent trusted snapshot, not
+            # a reference to the externally mutable intent.
+            self.assertNotIn(
+                "CREATE_DRAFT_PR",
+                work_item["authority_envelope"]["allowed_capabilities"])
+            return bounded_worker(None, None, work_item, None, attempt_number=1)
+        with patch("scripts.bounded_applab_orchestrator.propose_in_applab_workspace",
+                   side_effect=simulate_preflight_then_execute):
+            result = orch.propose_bounded_patch(
+                intent, write, POLICY, receipt=proof, verifier_key=KEY,
+                repo_root=None, patch_path=None, investigation={},
+                attempt_number=1,
+                bounded_worker=lambda *a, **k: (
+                    calls.append("ran") or {"state": "READY_FOR_VERIFICATION"}))
+        self.assertEqual(calls, ["ran"])
+        self.assertEqual(result["queue_lease_closed"], False)
+        self.assertEqual(result["operation_id"], "op_x10")
+
     def test_trusted_mapping_needed_before_any_enqueue(self):
         bad = copy.deepcopy(JOB)
         bad["idempotency_key"] = "another-delivery-000001"
