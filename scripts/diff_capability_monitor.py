@@ -108,8 +108,8 @@ def analyze(event: dict[str, Any], diff: dict[str, Any], *,
         # Never serialize source hunks, code text, secrets or user payload.
         # We only take bounded path signals; rename predecessor also matters.
         for source_path in (path, previous):
-            if not source_path or source_path.rsplit(".", 1)[-1].lower() not in
-                    {ext.lstrip(".") for ext in EXTENSIONS}:
+            if (not source_path or
+                ("." + source_path.rsplit(".", 1)[-1].lower()) not in EXTENSIONS):
                 continue
             normalized = source_path.lower().replace("-", "_")
             signals = sorted({kind for kind, keywords in KEYWORDS
