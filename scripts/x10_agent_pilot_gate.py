@@ -10,11 +10,15 @@ import json
 import re
 from typing import Any, Callable
 
+try:
+    from scripts.agent_job_gateway import safe_path
+except ModuleNotFoundError:
+    from agent_job_gateway import safe_path
+
 SHA = re.compile(r"[a-f0-9]{40}\Z")
 REPO = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\Z")
 OP = re.compile(r"[A-Za-z0-9_.:-]{1,128}\Z")
 ALLOWED = frozenset(("X10-046", "X10-047"))
-PROTECTED = ("AGENTS.md", "CURRENT.yaml", "golden/", ".github/", "contracts/", "secrets/", ".env")
 
 class PilotEvidenceError(ValueError):
     pass
@@ -61,9 +65,7 @@ def assess(records: list[dict[str, Any]], *,
         _require(isinstance(files, list) and 1 <= len(files) <= 5
                  and len(set(files)) == len(files)
                  and all(isinstance(p, str) and 1 <= len(p) <= 240
-                         and not p.startswith(("/", "../", "./"))
-                         and ".." not in p.split("/")
-                         and not p.startswith(PROTECTED)
+                         and safe_path(p)
                          and not p.endswith((".key", ".env"))
                          for p in files), "PILOT_PATHS_NOT_SAFE")
         _require(row["pr_url"].startswith(f"https://github.com/{name}/pull/")

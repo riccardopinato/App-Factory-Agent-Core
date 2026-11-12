@@ -52,7 +52,9 @@ class PilotTests(unittest.TestCase):
             assess([A], trusted_evidence_resolver=drift)
 
     def test_sensitive_paths_refused(self):
-        for path in ["AGENTS.md", ".github/workflows/ci.yml", "../secrets/.env"]:
+        for path in ["AGENTS.md", "src/AGENTS.md", "src/secrets/credentials.json",
+                     ".github/workflows/ci.yml", "../secrets/.env",
+                     "..\\outside\\payload.py"]:
             r = {**A, "changed_files": [path]}
             with self.assertRaisesRegex(PilotEvidenceError, "PILOT_PATHS_NOT_SAFE"):
                 assess([r], trusted_evidence_resolver=resolved)
