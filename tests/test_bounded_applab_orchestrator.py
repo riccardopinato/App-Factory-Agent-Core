@@ -131,6 +131,15 @@ class OrchestratorTests(unittest.TestCase):
         with self.assertRaisesRegex(OrchestrationError, "APPLAB_LEASE_NOT_FOUND"):
             self.orch.prepare_claim(JOB, POLICY, "op_x10", self.claim, now_ts=1)
 
+    def test_stale_caller_timestamp_cannot_validate_currently_expired_lease(self):
+        # The caller passes "now" from long before the real lease expired.
+        # Compare current durable entry against the real process clock too.
+        expired = time.time() - 10
+        self.claim["lease_until"] = expired
+        self.queue.lease["lease_until"] = expired
+        with self.assertRaisesRegex(OrchestrationError, "APPLAB_LEASE_EXPIRED"):
+            self.orch.prepare_claim(JOB, POLICY, "op_x10", self.claim, now_ts=1)
+
     def test_superseded_or_stolen_lease_is_denied(self):
         self.queue.lease["leased_by"] = "other-worker"
         with self.assertRaisesRegex(OrchestrationError, "APPLAB_LEASE_OWNER_OR_GENERATION"):
