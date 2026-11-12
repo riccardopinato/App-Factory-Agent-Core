@@ -4,6 +4,7 @@ import hashlib
 import hmac
 import time
 import unittest
+from unittest.mock import patch
 from datetime import datetime, timedelta, timezone
 
 from scripts.agent_job_gateway import canonical, job_digest
@@ -166,6 +167,54 @@ class OrchestratorTests(unittest.TestCase):
                 intent, write, POLICY, receipt=proof, verifier_key=KEY,
                 repo_root=None, patch_path=None, investigation={},
                 attempt_number=1, bounded_worker=lambda *a, **k: calls.append(a))
+        self.assertEqual(calls, [])
+
+    def test_lease_reassigned_during_workspace_preflight_never_enters_worker(self):
+        write = copy.deepcopy(JOB)
+        write["mode"] = "propose_diff"
+        orch = BoundedAppLabOrchestrator(
+            AppLabQueueBridge(self.store, self.queue),
+            binding_verifier=lambda digest, opid, op: digest == job_digest(write),
+            work_item_factory=graph_factory)
+        self.store.op["current_state"] = "READY"
+        proof = receipt(write)
+        intent = orch.prepare_claim(write, POLICY, "op_x10", self.claim, now_ts=1,
+                                    receipt=proof, verifier_key=KEY)
+        calls = []
+        def simulate_preflight_then_execute(*a, bounded_worker, **kw):
+            self.queue.lease["leased_by"] = "recovery-worker"
+            return bounded_worker(None, None, None, None, attempt_number=1)
+        with patch("scripts.bounded_applab_orchestrator.propose_in_applab_workspace",
+                   side_effect=simulate_preflight_then_execute):
+            with self.assertRaisesRegex(OrchestrationError, "APPLAB_LEASE_OWNER_OR_GENERATION"):
+                orch.propose_bounded_patch(
+                    intent, write, POLICY, receipt=proof, verifier_key=KEY,
+                    repo_root=None, patch_path=None, investigation={},
+                    attempt_number=1, bounded_worker=lambda *a, **k: calls.append("executed"))
+        self.assertEqual(calls, [])
+
+    def test_cancelled_during_workspace_preflight_never_enters_worker(self):
+        write = copy.deepcopy(JOB)
+        write["mode"] = "propose_diff"
+        orch = BoundedAppLabOrchestrator(
+            AppLabQueueBridge(self.store, self.queue),
+            binding_verifier=lambda digest, opid, op: digest == job_digest(write),
+            work_item_factory=graph_factory)
+        self.store.op["current_state"] = "READY"
+        proof = receipt(write)
+        intent = orch.prepare_claim(write, POLICY, "op_x10", self.claim, now_ts=1,
+                                    receipt=proof, verifier_key=KEY)
+        calls = []
+        def simulate_preflight_then_execute(*a, bounded_worker, **kw):
+            self.store.op["current_state"] = "CANCELLED"
+            return bounded_worker(None, None, None, None, attempt_number=1)
+        with patch("scripts.bounded_applab_orchestrator.propose_in_applab_workspace",
+                   side_effect=simulate_preflight_then_execute):
+            with self.assertRaisesRegex(OrchestrationError, "APPLAB_OPERATION_NOT_ACTIVE"):
+                orch.propose_bounded_patch(
+                    intent, write, POLICY, receipt=proof, verifier_key=KEY,
+                    repo_root=None, patch_path=None, investigation={},
+                    attempt_number=1, bounded_worker=lambda *a, **k: calls.append("executed"))
         self.assertEqual(calls, [])
 
     def test_trusted_mapping_needed_before_any_enqueue(self):
