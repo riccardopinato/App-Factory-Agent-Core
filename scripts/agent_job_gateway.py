@@ -65,11 +65,24 @@ def evaluate(job: dict[str, Any], policy: dict[str, Any],
     """
     if not isinstance(job, dict) or not isinstance(policy, dict):
         return _reason("MALFORMED_INPUT")
-    if job.get("schema_version") != 1 or job.get("mode") not in MODES:
+    mode = job.get("mode")
+    if type(job.get("schema_version")) is not int or job["schema_version"] != 1 or not isinstance(mode, str) or mode not in MODES:
         return _reason("UNSUPPORTED_JOB")
+    identity, idem = job.get("job_id"), job.get("idempotency_key")
+    if not isinstance(identity, str) or not (8 <= len(identity) <= 128) or not re.fullmatch(r"[A-Za-z0-9_.:/-]+", identity):
+        return _reason("MISSING_JOB_IDENTITY")
+    if not isinstance(idem, str) or not (12 <= len(idem) <= 256) or not re.fullmatch(r"[A-Za-z0-9_.:/-]+", idem):
+        return _reason("MISSING_IDEMPOTENCY_KEY")
+    if not set(job).issubset({"schema_version","job_id","idempotency_key","target","mode","request","limits","approval"}):
+        return _reason("UNKNOWN_JOB_FIELDS")
+    approval_design = job.get("approval")
+    if approval_design is not None and (not isinstance(approval_design, dict) or approval_design.get("approved") is not False):
+        return _reason("UNTRUSTED_JOB_APPROVAL")
     target, limits = job.get("target"), job.get("limits")
     if not isinstance(target, dict) or not isinstance(limits, dict):
         return _reason("INVALID_TARGET_OR_LIMITS")
+    if not set(target).issubset({"repository","source_sha","allowed_paths"}) or not set(limits).issubset({"timeout_seconds","max_attempts","model_token_budget"}):
+        return _reason("UNKNOWN_TARGET_OR_LIMITS")
     repo, sha = target.get("repository"), target.get("source_sha")
     if not isinstance(repo, str) or not REPO.fullmatch(repo):
         return _reason("INVALID_REPOSITORY")
@@ -89,9 +102,17 @@ def evaluate(job: dict[str, Any], policy: dict[str, Any],
             raise ValueError
     except (KeyError, TypeError, ValueError, OverflowError):
         return _reason("BUDGET_EXCEEDED")
-    summary = job.get("request", {}).get("summary", "") if isinstance(job.get("request"), dict) else None
+    request = job.get("request")
+    if not isinstance(request, dict) or not set(request).issubset({"summary","issue_url"}):
+        return _reason("INVALID_REQUEST")
+    summary = request.get("summary")
     if not isinstance(summary, str) or len(summary) > 10000:
         return _reason("INVALID_REQUEST")
+    if "issue_url" in request and not isinstance(request["issue_url"], str):
+        return _reason("INVALID_REQUEST")
+    tokens = limits.get("model_token_budget", 0)
+    if type(tokens) is not int or not 0 <= tokens <= 500000:
+        return _reason("BUDGET_EXCEEDED")
     if not isinstance(policy.get("repositories"), list) or not isinstance(policy.get("modes"), list):
         return _reason("INVALID_POLICY")
     if repo not in policy["repositories"] or job["mode"] not in policy["modes"]:
@@ -118,11 +139,14 @@ def evaluate(job: dict[str, Any], policy: dict[str, Any],
         return _reason("APPROVAL_SCOPE_MISMATCH")
     if receipt.get("allowed_paths") != paths:
         return _reason("APPROVAL_PATH_MISMATCH")
-    if not receipt.get("reviewer") or not receipt.get("review_url", "").startswith("https://github.com/"):
+    reviewer, review_url = receipt.get("reviewer"), receipt.get("review_url")
+    if not isinstance(reviewer, str) or not reviewer or not isinstance(review_url, str) or not review_url.startswith("https://github.com/"):
         return _reason("APPROVAL_PROVENANCE_MISSING")
+    if not isinstance(receipt.get("expires_at"), str) or (now is not None and not isinstance(now, datetime)):
+        return _reason("APPROVAL_TIME_INVALID")
     try:
         expiry = datetime.fromisoformat(receipt["expires_at"].replace("Z", "+00:00"))
-        stamp = now or datetime.now(timezone.utc)
+        stamp = now if now is not None else datetime.now(timezone.utc)
         if expiry.tzinfo is None or stamp.tzinfo is None or not stamp < expiry:
             return _reason("APPROVAL_EXPIRED")
         if (expiry - stamp).total_seconds() > 3600:
