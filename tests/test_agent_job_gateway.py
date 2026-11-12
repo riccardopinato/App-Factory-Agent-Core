@@ -43,6 +43,52 @@ class JobGatewayTests(unittest.TestCase):
         self.assertEqual(set(design["properties"]["mode"]["enum"]),
                          {"analyze","run_tests","propose_diff","prepare_pr"})
 
+    def test_mandatory_job_id_and_idempotency(self):
+        j=job()
+        del j["job_id"]
+        self.assertEqual(evaluate(j,policy())["reason"],"MISSING_JOB_IDENTITY")
+        j=job()
+        j["job_id"]="x"
+        self.assertEqual(evaluate(j,policy())["reason"],"MISSING_JOB_IDENTITY")
+        j=job()
+        del j["idempotency_key"]
+        self.assertEqual(evaluate(j,policy())["reason"],"MISSING_IDEMPOTENCY_KEY")
+        j=job()
+        j["idempotency_key"]="short"
+        self.assertEqual(evaluate(j,policy())["reason"],"MISSING_IDEMPOTENCY_KEY")
+
+    def test_malformed_input_never_raises(self):
+        for bad_mode in ([], {}, 4, None):
+            j=job()
+            j["mode"]=bad_mode
+            self.assertFalse(evaluate(j,policy())["authorized"])
+        j=job()
+        j["request"]={"summary":None}
+        self.assertEqual(evaluate(j,policy())["reason"],"INVALID_REQUEST")
+        j=job()
+        j["approval"]={"approved":True}
+        self.assertEqual(evaluate(j,policy())["reason"],"UNTRUSTED_JOB_APPROVAL")
+        j=job()
+        j["target"]["unexpected"]={"secret":1}
+        self.assertEqual(evaluate(j,policy())["reason"],"UNKNOWN_TARGET_OR_LIMITS")
+        j=job()
+        j["limits"]["model_token_budget"]=1.5
+        self.assertEqual(evaluate(j,policy())["reason"],"BUDGET_EXCEEDED")
+
+    def test_malformed_approval_receipt_never_raises(self):
+        now=datetime(2026,11,12,tzinfo=timezone.utc)
+        j=job("prepare_pr")
+        for field,value,reason in (
+            ("review_url",None,"APPROVAL_PROVENANCE_MISSING"),
+            ("review_url",77,"APPROVAL_PROVENANCE_MISSING"),
+            ("reviewer",[],"APPROVAL_PROVENANCE_MISSING"),
+            ("expires_at",123456,"APPROVAL_TIME_INVALID"),
+            ("expires_at",None,"APPROVAL_TIME_INVALID"),
+        ):
+            proof=receipt(j,now)
+            proof[field]=value
+            self.assertEqual(evaluate(j,policy(),receipt=proof,verifier_key=KEY,now=now)["reason"],reason)
+
     def test_read_mode_is_admission_not_execution(self):
         decision=evaluate(job(),policy())
         self.assertTrue(decision["authorized"])
