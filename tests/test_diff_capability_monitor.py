@@ -95,6 +95,21 @@ class MonitorTests(unittest.TestCase):
         with self.assertRaisesRegex(MonitorError, "UNSAFE_RENAME_PATH"):
             self.assess(diff=v)
 
+    def test_sensitive_current_and_previous_path_metadata_are_hashed(self):
+        value = copy.deepcopy(DIFF)
+        current = "lib/auth/access_token_ghp_SECRET123456.json"
+        previous = "lib/auth/private_user_email_example_com.json"
+        value["files"][0]["path"] = current
+        value["files"][0]["previous_path"] = previous
+        value["files"][0]["status"] = "R"
+        result = self.assess(diff=value)
+        rendered = str(result)
+        for secret in ("ghp_SECRET123456", "private_user_email", current, previous):
+            self.assertNotIn(secret, rendered)
+        self.assertTrue(all("path_sha256" in row and "path" not in row
+                            for row in result["signals"]))
+        self.assertEqual(result["authority"], "ADVISORY_ONLY")
+
     def test_never_disclose_raw_hunks_or_source_data(self):
         v = copy.deepcopy(DIFF)
         v["hunks"] = ["+SECRET_TOKEN=do_not_copy", "+users private data"]
