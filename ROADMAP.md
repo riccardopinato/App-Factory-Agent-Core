@@ -23,6 +23,10 @@ Stato iniziale 11/11/2026: plan, source locale non importato. Ogni voce `[ ]` è
 
 **Roadmap canonica del rollout:** [Hub Idee / Agent Factory — 35 repository](https://github.com/riccardopinato/Idee-app-Archivi-riferimenti/blob/main/18-AGENT-FACTORY/ROADMAP_CONTEXT_AUTOMATION_35_REPOS_2026-11-11.md). Riferimento Factory: `App-Factory-Core@c5adc147046beb7024629466d10eeb799c3c2619` (Master v27, Golden Index v29). Il codice locale Windows v0.1–v0.4 resta `USER_REPORTED` / non importato.
 
+## App Factory 10x — X10-011 queue adapter (12/11/2026)
+- [x] **SOURCE IMPLEMENTED / OFFLINE TEST PROPOSAL:** piccolo facade per `DurablePerRepoQueue` e `SQLiteShadowStore` esistenti (no seconda coda); controllo gateway, operazione persistita, SHA, replay, checkpoint e recover, con 8 fixture offline.
+- [ ] **RUNTIME NOT VERIFIED:** avviare AppLab reale e dimostrare lease/retry dopo crash, associando idempotency key ai delivery con control-plane trusted; Windows agent ancora assente. X10-013 orchestration non sbloccato fino al successivo workspace X10-012 e gates.
+
 ## Maxi-step 1 — Inventory & import controllato (P0)
 - [ ] Acquisire cartella AppFactoryAgent Windows in repo/branch privato o archivio protetto, con hash e lista file; escludere .env, SQLite privata, risultati sensibili e credenziali.
 - [ ] Identificare versione dei file v0.1/v0.2/v0.3/v0.4 e patch_retry.py; scegliere sorgente canonica invece di concatenare script obsoleti.

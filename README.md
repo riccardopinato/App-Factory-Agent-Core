@@ -47,3 +47,8 @@ Un cron GitHub Actions controlla gli SHA di Core/Ideas/AppLab, aggiorna SOLO il 
 | Persistenza tramite GBrain | Sistema esterno esistente | Nessuna integrazione AGF comprovata |
 
 **Nessun PASS automatico**: PR/CI, prodotto testato, hardware e release hanno evidenze differenti.
+
+## X10-011 — AppLab durable queue bridge (source-only)
+- [Adapter `applab_queue_bridge.py`](scripts/applab_queue_bridge.py): autorizza job via X10-010, risolve un'operazione **già persistita** da AppLab, conferma repository/SHA e delega enqueue idempotente, checkpoint riproducibile e recupero lease alla coda AppLab v5.4E; nessun secondo SQLite, scheduler o worker.
+- [8 fixture offline](tests/test_applab_queue_bridge.py): replay, source mismatch, write senza receipt, ancestry non provata, ledger drift, expired lease recovery, timestamp errato, scope negato. Comando: `python3 -m unittest discover -s tests -p 'test_applab_queue_bridge.py' -v`.
+- **Limite:** test con backend finto, nessuna esecuzione AppLab reale, claim/complete/PR o Windows import. L'operation-id è creato dall'admission canonica, non dalla descrizione non fidata del job; l'adapter non certifica binding dell'idempotency key al delivery. X10-012 e X10-013 restano gate distinti.
