@@ -56,3 +56,6 @@ Un cron GitHub Actions controlla gli SHA di Core/Ideas/AppLab, aggiorna SOLO il 
 ## X10-012 — workspace guard (source/CI)
 - [Guardia source SHA/scoped worktree](scripts/applab_workspace_gate.py) e [test di regressione](tests/test_applab_workspace_gate.py) davanti al `bounded_fix_worker_v60c` già esistente in AppLab; HMAC, HEAD immutabile, no patch dentro il checkout, max file/linee e verifica che nessuna operazione remote/merge/release sia eseguita.
 - [Confini e rollback](docs/X10-012_ISOLATED_WORKSPACE_GATE.md): il rollback del worktree temporaneo è delegato ad AppLab, non è implementato un secondo patcher. Runtime Windows/consumer, shell isolation e PR restano da integrare in X10-013/014/015.
+
+## X10-041 — diff-aware monitoring candidate intake (source+CI)
+- [Diff adapter](scripts/diff_capability_monitor.py), [negative tests](tests/test_diff_capability_monitor.py) and [trust boundary](docs/X10-041_DIFF_AWARE_MONITOR.md). Requires authenticated exact GitHub source SHA and AppLab-pinned diff evidence; emits deterministic path-only hints without code, storage, CAP promotion, PR or release. No live webhook/GitHub polling configured.
