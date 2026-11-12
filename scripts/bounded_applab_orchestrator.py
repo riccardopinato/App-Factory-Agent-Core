@@ -215,11 +215,27 @@ class BoundedAppLabOrchestrator:
             intent["operation_id"], now_ts=time.time(),
             allowed_operation_states=frozenset({"READY", "RUNNING"}),
         )
+        def fenced_worker(*args: Any, **kwargs: Any) -> dict[str, Any]:
+            # X10-013: the workspace preflight can run Git subprocesses; a
+            # lease can expire or be recovered during that work. Re-check
+            # current durable AppLab state at the exact callback boundary.
+            self._bound(job, intent["operation_id"])
+            self._require_live_app_lab_lease(
+                {"operation_id": intent["operation_id"],
+                 "repository": intent["repository"],
+                 "resolved_sha": intent["resolved_sha"],
+                 "worker_id": intent.get("worker_id"),
+                 "lease_until": intent.get("lease_until")},
+                intent["operation_id"], now_ts=time.time(),
+                allowed_operation_states=frozenset({"READY", "RUNNING"}),
+            )
+            return bounded_worker(*args, **kwargs)
+
         result = propose_in_applab_workspace(
             job, policy, receipt=receipt, verifier_key=verifier_key,
             repo_root=repo_root, patch_path=patch_path,
             work_item=intent["work_item"], investigation=investigation,
-            attempt_number=attempt_number, bounded_worker=bounded_worker,
+            attempt_number=attempt_number, bounded_worker=fenced_worker,
         )
         return {**result, "operation_id": intent["operation_id"],
                 "queue_lease_closed": False, "independent_verification_required": True}
