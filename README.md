@@ -24,6 +24,16 @@ Consumers proposti: Developer Agent, QA Agent, Research/Donor Agent, Finance Age
 - **PROPOSTO:** worker multi-repo affidabile, tool adapters, test reali, PR, build, recovery e uso in Finance.
 - **ESCLUSO:** esecuzione di trading live, merge non autorizzato, rilancio autonomo di ChatGPT senza runner, accesso incontrollato ai file/secret.
 
+## Affidabilità e riuso (11/11/2026)
+- [Helper offline di reconciliation](scripts/context_reliability.py), con test negativi in [tests/test_context_reliability.py](tests/test_context_reliability.py), CI verde [PR #12](https://github.com/riccardopinato/App-Factory-Agent-Core/pull/12).
+- [Recovery/rollback playbook](docs/CONTEXT_SYNC_RECOVERY_PLAYBOOK.md), [protocollo review semantica](docs/SEMANTIC_REVIEW_PROTOCOL.md) e [candidate admission](docs/CONTEXT_SYNC_REUSE_ADMISSION.md). Nessun Golden promosso.
+- [Dashboard fonte flotta](https://github.com/riccardopinato/Idee-app-Archivi-riferimenti/blob/main/16-APP-FACTORY-SITE/data/context_fleet.json): 35 slot, stati separati; deploy del Site non verificato.
+- Limiti: 4 permessi PR admin ancora bloccanti; nessuna esecuzione `schedule`/`workflow_dispatch` del contesto osservata; nessun codice Windows locale importato.
+
+## Job permission gateway — X10-010
+- [Decision helper fail-closed](scripts/agent_job_gateway.py) e [fixture di sicurezza](tests/test_agent_job_gateway.py) per validare job, repo/source SHA, allowed paths, budget e approvazione scoped. [Contratto e limiti](docs/X10-010_PERMISSION_GATEWAY.md).
+- Funzionalità **solo offline/policy**: nessuna chiamata ad AppLab, nessun permesso reale al runner, nessun source Windows importato e nessuna PR creata autonomamente.
+
 ## Automazione
 Un cron GitHub Actions controlla gli SHA di Core/Ideas/AppLab, aggiorna SOLO il file snapshot in una PR. Non può accedere al PC Windows spento né completare il coding agent. Per i requisiti di autorizzazione e limitazioni: [AUTO_UPDATE_POLICY](docs/AUTO_UPDATE_POLICY.md).
 
@@ -37,3 +47,15 @@ Un cron GitHub Actions controlla gli SHA di Core/Ideas/AppLab, aggiorna SOLO il 
 | Persistenza tramite GBrain | Sistema esterno esistente | Nessuna integrazione AGF comprovata |
 
 **Nessun PASS automatico**: PR/CI, prodotto testato, hardware e release hanno evidenze differenti.
+
+## X10-011 — AppLab durable queue bridge (source-only)
+- [Adapter `applab_queue_bridge.py`](scripts/applab_queue_bridge.py): autorizza job via X10-010, risolve un'operazione **già persistita** da AppLab, conferma repository/SHA e delega enqueue idempotente, checkpoint riproducibile e recupero lease alla coda AppLab v5.4E; nessun secondo SQLite, scheduler o worker.
+- [8 fixture offline](tests/test_applab_queue_bridge.py): replay, source mismatch, write senza receipt, ancestry non provata, ledger drift, expired lease recovery, timestamp errato, scope negato. Comando: `python3 -m unittest discover -s tests -p 'test_applab_queue_bridge.py' -v`.
+- **Limite:** test con backend finto, nessuna esecuzione AppLab reale, claim/complete/PR o Windows import. L'operation-id è creato dall'admission canonica, non dalla descrizione non fidata del job; l'adapter non certifica binding dell'idempotency key al delivery. X10-012 e X10-013 restano gate distinti.
+
+## X10-012 — workspace guard (source/CI)
+- [Guardia source SHA/scoped worktree](scripts/applab_workspace_gate.py) e [test di regressione](tests/test_applab_workspace_gate.py) davanti al `bounded_fix_worker_v60c` già esistente in AppLab; HMAC, HEAD immutabile, no patch dentro il checkout, max file/linee e verifica che nessuna operazione remote/merge/release sia eseguita.
+- [Confini e rollback](docs/X10-012_ISOLATED_WORKSPACE_GATE.md): il rollback del worktree temporaneo è delegato ad AppLab, non è implementato un secondo patcher. Runtime Windows/consumer, shell isolation e PR restano da integrare in X10-013/014/015.
+
+## X10-041 — diff-aware monitoring candidate intake (source+CI)
+- [Diff adapter](scripts/diff_capability_monitor.py), [negative tests](tests/test_diff_capability_monitor.py) and [trust boundary](docs/X10-041_DIFF_AWARE_MONITOR.md). Requires authenticated exact GitHub source SHA and AppLab-pinned diff evidence; emits deterministic path-only hints without code, storage, CAP promotion, PR or release. No live webhook/GitHub polling configured.
