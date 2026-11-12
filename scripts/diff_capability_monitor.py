@@ -116,12 +116,16 @@ def analyze(event: dict[str, Any], diff: dict[str, Any], *,
                               if any(token in normalized for token in keywords)})
             if not signals:
                 continue
-            targets.append({"path": source_path, "signals": signals})
-    targets.sort(key=lambda x: x["path"])
+            # Filenames may themselves contain access tokens or personal
+            # identifiers. Do not copy even trusted path metadata into reports.
+            targets.append({"path_sha256": _digest(["path", source_path]),
+                            "signals": signals})
+    targets.sort(key=lambda x: x["path_sha256"])
     _require(len(targets) <= MAX_HINTS, "DIFF_HINT_CAP_EXCEEDED")
     report = {
         "schema_version": 1, "record_type": "X10_041_DIFF_HINTS",
-        "authority": "ADVISORY_ONLY", "repository": repo, "source_ref": ref,
+        "authority": "ADVISORY_ONLY", "repository": repo,
+        "source_ref_sha256": _digest(["ref", ref]),
         "base_sha": base_sha, "head_sha": head_sha,
         "monitor_key": _digest([repo.casefold(), ref, base_sha, head_sha]),
         "signals": targets, "changed_file_count": len(rows),
