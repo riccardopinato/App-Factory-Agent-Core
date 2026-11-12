@@ -126,10 +126,16 @@ class OrchestratorTests(unittest.TestCase):
     def test_write_denied_without_external_scoped_receipt(self):
         write = copy.deepcopy(JOB)
         write["mode"] = "propose_diff"
-        self.assertEqual(self.orch.stage(write, POLICY, "op_x10", now_ts=1)["state"], "BLOCKED")
+        # Assume a separately trusted control plane has bound this exact
+        # write-mode job to the operation. The policy must STILL deny it.
+        o = BoundedAppLabOrchestrator(
+            AppLabQueueBridge(self.store, self.queue),
+            binding_verifier=lambda digest, opid, op: digest == job_digest(write) and opid == "op_x10",
+            work_item_factory=graph_factory)
+        self.assertEqual(o.stage(write, POLICY, "op_x10", now_ts=1)["state"], "BLOCKED")
         self.assertEqual(self.queue.items, {})
         with self.assertRaisesRegex(OrchestrationError, "JOB_NOT_AUTHORIZED"):
-            self.orch.prepare_claim(write, POLICY, "op_x10", self.claim, now_ts=2)
+            o.prepare_claim(write, POLICY, "op_x10", self.claim, now_ts=2)
 
     def test_pr_mode_not_routed_even_if_allowlisted(self):
         pr = copy.deepcopy(JOB)
