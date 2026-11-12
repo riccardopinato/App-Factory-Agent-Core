@@ -96,6 +96,14 @@ class ResearchAdapterTests(unittest.TestCase):
                 research_intake(JOB, POLICY, research_input=x,
                                 trusted_source_resolver=resolver)
 
+    def test_percent_encode_url_delimiters_preserving_path(self):
+        x = copy.deepcopy(CAND)
+        x["candidates"][0]["path"] = "lib/feature#v2?source%.dart"
+        out = research_intake(JOB, POLICY, research_input=x, trusted_source_resolver=resolver)
+        self.assertEqual(out["candidates"][0]["source_url"],
+                         "https://github.com/example/donor/blob/" + OTHER +
+                         "/lib/feature%23v2%3Fsource%25.dart")
+
     def test_wrong_mode_rejected(self):
         x = copy.deepcopy(JOB)
         x["mode"] = "prepare_pr"

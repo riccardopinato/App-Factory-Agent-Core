@@ -10,6 +10,7 @@ import hashlib
 import json
 import re
 from typing import Any, Callable
+from urllib.parse import quote
 
 try:
     from scripts.agent_job_gateway import evaluate, job_digest, safe_path
@@ -95,7 +96,7 @@ def research_intake(job: dict[str, Any], policy: dict[str, Any], *,
             "repository": repo, "source_sha": sha, "path": path, "kind": kind,
             "declared_license_spdx": resolved["license_spdx"],
             "license_review": "REQUIRED",
-            "source_url": f"https://github.com/{repo}/blob/{sha}/{path}",
+            "source_url": f"https://github.com/{repo}/blob/{sha}/{quote(path, safe='/')}",
             "donor_admission": "NOT_GRANTED",
         })
     digest = hashlib.sha256(json.dumps(normalized, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
