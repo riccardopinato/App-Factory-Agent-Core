@@ -87,8 +87,13 @@ class BoundedAppLabOrchestrator:
             same_lease = False
         if not same_lease:
             raise OrchestrationError("APPLAB_LEASE_OWNER_OR_GENERATION_MISMATCH")
+        # AppLab's caller-supplied now_ts is not sufficient to prove a
+        # *current* lease: a stale or malicious clock can be far in the past.
+        # Check trusted process wall clock as well, including prepare_claim.
+        real_now = time.time()
         if not (type(now_ts) in (int, float) and math.isfinite(now_ts)
-                and 0 <= now_ts < float(entry["lease_until"])):
+                and 0 <= now_ts < float(entry["lease_until"])
+                and real_now < float(entry["lease_until"])):
             raise OrchestrationError("APPLAB_LEASE_EXPIRED")
         persisted_state = self.bridge.store.get_operation(operation_id)["current_state"]
         if persisted_state not in allowed_operation_states:
