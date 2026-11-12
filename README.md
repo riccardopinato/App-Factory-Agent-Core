@@ -59,3 +59,7 @@ Un cron GitHub Actions controlla gli SHA di Core/Ideas/AppLab, aggiorna SOLO il 
 
 ## X10-041 — diff-aware monitoring candidate intake (source+CI)
 - [Diff adapter](scripts/diff_capability_monitor.py), [negative tests](tests/test_diff_capability_monitor.py) and [trust boundary](docs/X10-041_DIFF_AWARE_MONITOR.md). Requires authenticated exact GitHub source SHA and AppLab-pinned diff evidence; emits deterministic path-only hints without code, storage, CAP promotion, PR or release. No live webhook/GitHub polling configured.
+
+## X10-013 — AppLab bounded orchestration adapter (source-only)
+- [Orchestrator source](scripts/bounded_applab_orchestrator.py), [tests](tests/test_bounded_applab_orchestrator.py), [review boundary](docs/X10-013_BOUNDED_ORCHESTRATION.md). Pins jobs to an already persisted AppLab operation, validates a live queue lease before dispatch intent and at callback boundary after workspace preflight, and delegates recovery to AppLab's own durable queue. No second scheduler, self-issued permissions, automatic PR or release.
+- **SOURCE+CI only after exact-head verification.** Synthetic leases, no connected Windows worker, no real AppLab deployment/process-crash verification, no consumer/test artifact certification. Integrates alongside X10-041 without replacing its diff monitor.

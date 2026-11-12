@@ -1,3 +1,7 @@
+## X10-013 — bounded orchestration on current AppLab/Agent Core source (12/11/2026)
+- [x] Source-level orchestration combines X10-010/011/012 with AppLab WorkGraph injection; persisted lease ownership/expires check and callback-boundary fence; contract/replay tests in CI, no second scheduler.
+- [ ] Real trusted delivery binding, live AppLab/Windows worker, end-to-end crash+recovery, physical consumer tests and independent authenticated approval still NOT_VERIFIED; no automatic PR merge/release.
+
 ## X10-041 — diff-aware monitoring source adapter (12/11/2026)
 - [x] Pure read-only ingestion of trusted event + AppLab diff and stable candidate hint SHA with negative tests.
 - [ ] Live GitHub event authentication, external diff acquisition/verified run, authorized X10-042 registry join and real cross-app recommendation remain NOT_VERIFIED.
