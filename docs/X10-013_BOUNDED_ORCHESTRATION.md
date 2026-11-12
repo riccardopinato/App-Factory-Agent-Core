@@ -16,3 +16,9 @@
 These are offline Python tests using a fake AppLab `Store`, `Queue`, WorkGraph factory and synthetic job approval data. The test suite proves adapter logic **only**. It does **not** prove a production trust mapping exists, a Windows agent or real AppLab v6 worker has been imported/executed, AppLab SQL recovery after a process crash, shell/network isolation, actual consumer tests, an immutable build artifact, independent code review of generated diffs, automated PR merge, Play release or 10x productivity.
 
 **Next gate X10-014/015:** trusted control-plane registration, pinned local AppLab checkout/import, authenticated webhook/event delivery, bounded real execution with exact HEAD, real replay/timeout/rollback and independently verified CI/evidence before terminal lease completion. No self-issued approvals or silent escalation.
+
+### Additional security boundary, review 12/11/2026
+
+The caller-carried `intent` remains mutable/untrusted between `prepare_claim` and `propose_bounded_patch`. Immediately before workspace preflight the implementation now reconstructs and copies the trusted WorkItem from AppLab, captures the *original persisted lease generation* (worker, SHA, operation ID, expiration), and revalidates **that same snapshot** after preflight. Changes to the intent during preflight, even if they mirror a newly recovered/reassigned lease, cannot reauthorize a stale worker. A real wall clock is checked both at preparation and callback entry. Adversarial fixtures cover spoofed past time, forged WorkItem capabilities, a mutation during preflight and reassignment with concurrent modification of intent.
+
+This is source-level reasoning and fixture CI only; there is no actual production queue atomic transaction/fencing evidence or Windows runtime verification. A real AppLab-backed integration test is still required before trusting it across processes.
