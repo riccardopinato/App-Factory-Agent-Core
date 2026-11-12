@@ -1,3 +1,7 @@
+## X10-041 — diff-aware monitoring source adapter (12/11/2026)
+- [x] Pure read-only ingestion of trusted event + AppLab diff and stable candidate hint SHA with negative tests.
+- [ ] Live GitHub event authentication, external diff acquisition/verified run, authorized X10-042 registry join and real cross-app recommendation remain NOT_VERIFIED.
+
 # Roadmap — AGF-2026-001
 Stato iniziale 11/11/2026: plan, source locale non importato. Ogni voce `[ ]` è aperta.
 
