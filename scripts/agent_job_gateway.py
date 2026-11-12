@@ -41,7 +41,7 @@ def safe_path(value: str) -> bool:
         return False
     if any(ch in value for ch in ("\\", "\x00", "\r", "\n")) or value.startswith(("/", "~")):
         return False
-    if value.startswith("./") or "//" in value:
+    if value.startswith("./") or "//" in value or "/./" in value:
         return False
     parts = PurePosixPath(value).parts
     if not parts or any(p in (".", "..", "") for p in parts):
@@ -76,23 +76,25 @@ def evaluate(job: dict[str, Any], policy: dict[str, Any],
     if not isinstance(sha, str) or not SHA.fullmatch(sha):
         return _reason("INVALID_SHA")
     paths = target.get("allowed_paths", [])
-    if not isinstance(paths, list) or len(paths) > 128 or len(paths) != len(set(map(str, paths))):
+    if not isinstance(paths, list) or not paths or len(paths) > 128 or len(paths) != len(set(map(str, paths))):
         return _reason("BAD_PATH_SET")
     if any(not safe_path(p) for p in paths):
         return _reason("UNSAFE_PATH")
     try:
         timeout = limits["timeout_seconds"]
         attempts = limits["max_attempts"]
-        if isinstance(timeout, bool) or isinstance(attempts, bool):
+        if type(timeout) is not int or type(attempts) is not int:
             raise ValueError
-        if not (1 <= int(timeout) <= MAX_TIMEOUT and 1 <= int(attempts) <= MAX_ATTEMPTS):
+        if not (1 <= timeout <= MAX_TIMEOUT and 1 <= attempts <= MAX_ATTEMPTS):
             raise ValueError
     except (KeyError, TypeError, ValueError, OverflowError):
         return _reason("BUDGET_EXCEEDED")
     summary = job.get("request", {}).get("summary", "") if isinstance(job.get("request"), dict) else None
     if not isinstance(summary, str) or len(summary) > 10000:
         return _reason("INVALID_REQUEST")
-    if repo not in policy.get("repositories", []) or job["mode"] not in policy.get("modes", []):
+    if not isinstance(policy.get("repositories"), list) or not isinstance(policy.get("modes"), list):
+        return _reason("INVALID_POLICY")
+    if repo not in policy["repositories"] or job["mode"] not in policy["modes"]:
         return _reason("NOT_ALLOWLISTED")
     allowed = policy.get("allowed_paths", [])
     if not isinstance(allowed, list) or any(not safe_path(p) for p in allowed):
