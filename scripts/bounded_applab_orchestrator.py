@@ -243,28 +243,29 @@ class BoundedAppLabOrchestrator:
         # Independent local snapshot, no reference to untrusted intent
         # passes through the delegated preflight/worker callback.
         trusted_work_item = deepcopy(trusted_work_item)
-        # Real clock; a stale caller-controlled timestamp cannot reauthorize a
-        # queued/cancelled operation after a lease has expired or been reassigned.
+        # Capture the ORIGINAL lease generation before any workspace I/O.
+        # Caller-owned intent may be modified during preflight to mimic a
+        # newly reassigned lease; never read it again at the worker boundary.
+        operation_id = intent["operation_id"]
+        lease_identity = {
+            "operation_id": operation_id,
+            "repository": intent["repository"],
+            "resolved_sha": intent["resolved_sha"],
+            "worker_id": intent.get("worker_id"),
+            "lease_until": intent.get("lease_until"),
+        }
+        # Real clock; a stale caller-controlled timestamp cannot reauthorize
+        # cancelled/recovered work.
         self._require_live_app_lab_lease(
-            {"operation_id": intent["operation_id"],
-             "repository": intent["repository"], "resolved_sha": intent["resolved_sha"],
-             "worker_id": intent.get("worker_id"),
-             "lease_until": intent.get("lease_until")},
-            intent["operation_id"], now_ts=time.time(),
+            lease_identity, operation_id, now_ts=time.time(),
             allowed_operation_states=frozenset({"READY", "RUNNING"}),
         )
         def fenced_worker(*args: Any, **kwargs: Any) -> dict[str, Any]:
-            # X10-013: the workspace preflight can run Git subprocesses; a
-            # lease can expire or be recovered during that work. Re-check
-            # current durable AppLab state at the exact callback boundary.
-            self._bound(job, intent["operation_id"])
+            # Revalidate the original persisted generation immediately after
+            # workspace preflight, before entering any mutating patch callback.
+            self._bound(job, operation_id)
             self._require_live_app_lab_lease(
-                {"operation_id": intent["operation_id"],
-                 "repository": intent["repository"],
-                 "resolved_sha": intent["resolved_sha"],
-                 "worker_id": intent.get("worker_id"),
-                 "lease_until": intent.get("lease_until")},
-                intent["operation_id"], now_ts=time.time(),
+                lease_identity, operation_id, now_ts=time.time(),
                 allowed_operation_states=frozenset({"READY", "RUNNING"}),
             )
             return bounded_worker(*args, **kwargs)
@@ -275,7 +276,7 @@ class BoundedAppLabOrchestrator:
             work_item=trusted_work_item, investigation=investigation,
             attempt_number=attempt_number, bounded_worker=fenced_worker,
         )
-        return {**result, "operation_id": intent["operation_id"],
+        return {**result, "operation_id": operation_id,
                 "queue_lease_closed": False, "independent_verification_required": True}
 
     def recover(self, *, now_ts: float) -> dict[str, Any]:
