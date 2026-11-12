@@ -27,6 +27,10 @@ Stato iniziale 11/11/2026: plan, source locale non importato. Ogni voce `[ ]` è
 - [x] **SOURCE IMPLEMENTED / OFFLINE TEST PROPOSAL:** piccolo facade per `DurablePerRepoQueue` e `SQLiteShadowStore` esistenti (no seconda coda); controllo gateway, operazione persistita, SHA, replay, checkpoint e recover, con 8 fixture offline.
 - [ ] **RUNTIME NOT VERIFIED:** avviare AppLab reale e dimostrare lease/retry dopo crash, associando idempotency key ai delivery con control-plane trusted; Windows agent ancora assente. X10-013 orchestration non sbloccato fino al successivo workspace X10-012 e gates.
 
+## X10-012 — gated workspace source adapter (12/11/2026)
+- [x] Boundary source implementato: exact SHA, approved work item, allowed paths e risultato worker verificato, con fixture Git temporanee.
+- [ ] Nessuna prova dell'effettiva invocazione AppLab su Windows né di crash/rollback runtime: X10-013/015 rimangono separati.
+
 ## Maxi-step 1 — Inventory & import controllato (P0)
 - [ ] Acquisire cartella AppFactoryAgent Windows in repo/branch privato o archivio protetto, con hash e lista file; escludere .env, SQLite privata, risultati sensibili e credenziali.
 - [ ] Identificare versione dei file v0.1/v0.2/v0.3/v0.4 e patch_retry.py; scegliere sorgente canonica invece di concatenare script obsoleti.
