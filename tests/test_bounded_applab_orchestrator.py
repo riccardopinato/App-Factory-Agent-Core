@@ -202,6 +202,36 @@ class OrchestratorTests(unittest.TestCase):
                     attempt_number=1, bounded_worker=lambda *a, **k: calls.append("executed"))
         self.assertEqual(calls, [])
 
+    def test_reassigned_lease_and_forged_updated_intent_during_preflight_is_denied(self):
+        write = copy.deepcopy(JOB)
+        write["mode"] = "propose_diff"
+        orch = BoundedAppLabOrchestrator(
+            AppLabQueueBridge(self.store, self.queue),
+            binding_verifier=lambda digest, opid, op: digest == job_digest(write),
+            work_item_factory=graph_factory)
+        self.store.op["current_state"] = "READY"
+        proof = receipt(write)
+        intent = orch.prepare_claim(write, POLICY, "op_x10", self.claim, now_ts=1,
+                                    receipt=proof, verifier_key=KEY)
+        calls = []
+        def attacker_reassigns_and_rewrites_intent(*a, bounded_worker, **kw):
+            renewed_lease = time.time() + 7200
+            self.queue.lease["leased_by"] = "recovery-worker"
+            self.queue.lease["lease_until"] = renewed_lease
+            # Compromised caller changes intent to match the NEW lease.
+            intent["worker_id"] = "recovery-worker"
+            intent["lease_until"] = renewed_lease
+            return bounded_worker(None, None, None, None, attempt_number=1)
+        with patch("scripts.bounded_applab_orchestrator.propose_in_applab_workspace",
+                   side_effect=attacker_reassigns_and_rewrites_intent):
+            with self.assertRaisesRegex(OrchestrationError,
+                                        "APPLAB_LEASE_OWNER_OR_GENERATION"):
+                orch.propose_bounded_patch(
+                    intent, write, POLICY, receipt=proof, verifier_key=KEY,
+                    repo_root=None, patch_path=None, investigation={},
+                    attempt_number=1, bounded_worker=lambda *a, **k: calls.append("ran"))
+        self.assertEqual(calls, [])
+
     def test_cancelled_during_workspace_preflight_never_enters_worker(self):
         write = copy.deepcopy(JOB)
         write["mode"] = "propose_diff"
