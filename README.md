@@ -30,6 +30,10 @@ Consumers proposti: Developer Agent, QA Agent, Research/Donor Agent, Finance Age
 - [Dashboard fonte flotta](https://github.com/riccardopinato/Idee-app-Archivi-riferimenti/blob/main/16-APP-FACTORY-SITE/data/context_fleet.json): 35 slot, stati separati; deploy del Site non verificato.
 - Limiti: 4 permessi PR admin ancora bloccanti; nessuna esecuzione `schedule`/`workflow_dispatch` del contesto osservata; nessun codice Windows locale importato.
 
+## Job permission gateway — X10-010
+- [Decision helper fail-closed](scripts/agent_job_gateway.py) e [fixture di sicurezza](tests/test_agent_job_gateway.py) per validare job, repo/source SHA, allowed paths, budget e approvazione scoped. [Contratto e limiti](docs/X10-010_PERMISSION_GATEWAY.md).
+- Funzionalità **solo offline/policy**: nessuna chiamata ad AppLab, nessun permesso reale al runner, nessun source Windows importato e nessuna PR creata autonomamente.
+
 ## Automazione
 Un cron GitHub Actions controlla gli SHA di Core/Ideas/AppLab, aggiorna SOLO il file snapshot in una PR. Non può accedere al PC Windows spento né completare il coding agent. Per i requisiti di autorizzazione e limitazioni: [AUTO_UPDATE_POLICY](docs/AUTO_UPDATE_POLICY.md).
 
