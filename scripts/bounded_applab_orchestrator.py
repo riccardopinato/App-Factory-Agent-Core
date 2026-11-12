@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+import time
 from typing import Any, Callable
 
 try:
@@ -58,6 +59,41 @@ class BoundedAppLabOrchestrator:
             raise OrchestrationError("TRUSTED_OPERATION_BINDING_REQUIRED")
         return op
 
+    def _require_live_app_lab_lease(
+        self, claim: dict[str, Any], operation_id: str,
+        *, now_ts: float, allowed_operation_states: frozenset[str],
+    ) -> None:
+        """Check actual AppLab SQLite queue entry, never trust a copied claim."""
+        if not isinstance(claim, dict):
+            raise OrchestrationError("INVALID_LEASE_CLAIM")
+        entry_getter = getattr(self.bridge.queue, "_entry", None)
+        if not callable(entry_getter):
+            raise OrchestrationError("APPLAB_LEASE_INSPECTION_UNAVAILABLE")
+        entry = entry_getter(operation_id)
+        if entry is None:
+            raise OrchestrationError("APPLAB_LEASE_NOT_FOUND")
+        try:
+            same_lease = (
+                entry["operation_id"] == operation_id
+                and entry["state"] == "LEASED"
+                and entry["leased_by"] == claim["worker_id"]
+                and entry["repository"] == claim["repository"]
+                and entry["resolved_sha"] == claim["resolved_sha"]
+                and type(entry["lease_until"]) in (int, float)
+                and type(claim["lease_until"]) in (int, float)
+                and float(entry["lease_until"]) == float(claim["lease_until"])
+            )
+        except (TypeError, KeyError, ValueError):
+            same_lease = False
+        if not same_lease:
+            raise OrchestrationError("APPLAB_LEASE_OWNER_OR_GENERATION_MISMATCH")
+        if not (type(now_ts) in (int, float) and math.isfinite(now_ts)
+                and 0 <= now_ts < float(entry["lease_until"])):
+            raise OrchestrationError("APPLAB_LEASE_EXPIRED")
+        persisted_state = self.bridge.store.get_operation(operation_id)["current_state"]
+        if persisted_state not in allowed_operation_states:
+            raise OrchestrationError("APPLAB_OPERATION_NOT_ACTIVE")
+
     def stage(
         self, job: dict[str, Any], policy: dict[str, Any], operation_id: str,
         *, now_ts: float, receipt: dict[str, Any] | None = None,
@@ -104,6 +140,12 @@ class BoundedAppLabOrchestrator:
             or type(lease_until) not in (int, float)
             or not math.isfinite(lease_until) or not 0 <= now_ts < lease_until):
             raise OrchestrationError("LEASE_EXPIRED_OR_INVALID")
+        self._require_live_app_lab_lease(
+            claim, operation_id, now_ts=now_ts,
+            allowed_operation_states=frozenset({
+                "PLANNING", "READY", "RUNNING", "WAITING_RETRY", "WAITING_EXTERNAL",
+            }),
+        )
         digest = job_digest(job)
         work_item_id = "wrk_x10_" + hashlib.sha256(
             (operation_id + ":" + digest).encode("utf-8")
@@ -156,8 +198,23 @@ class BoundedAppLabOrchestrator:
             or intent.get("state") != "LEASE_VALIDATED_PROPOSAL_ONLY"
             or intent.get("job_sha256") != job_digest(job)
             or intent.get("repository") != job["target"]["repository"]
-            or intent.get("resolved_sha") != job["target"]["source_sha"]):
+            or intent.get("resolved_sha") != job["target"]["source_sha"]
+            or not isinstance(intent.get("work_item"), dict)
+            or intent["work_item"].get("operation_id") != intent.get("operation_id")
+            or intent["work_item"].get("repository") != job["target"]["repository"]
+            or intent["work_item"].get("resolved_sha") != job["target"]["source_sha"]):
             raise OrchestrationError("INVALID_PATCH_INTENT")
+        self._bound(job, intent["operation_id"])
+        # Real clock; a stale caller-controlled timestamp cannot reauthorize a
+        # queued/cancelled operation after a lease has expired or been reassigned.
+        self._require_live_app_lab_lease(
+            {"operation_id": intent["operation_id"],
+             "repository": intent["repository"], "resolved_sha": intent["resolved_sha"],
+             "worker_id": intent.get("worker_id"),
+             "lease_until": intent.get("lease_until")},
+            intent["operation_id"], now_ts=time.time(),
+            allowed_operation_states=frozenset({"READY", "RUNNING"}),
+        )
         result = propose_in_applab_workspace(
             job, policy, receipt=receipt, verifier_key=verifier_key,
             repo_root=repo_root, patch_path=patch_path,
