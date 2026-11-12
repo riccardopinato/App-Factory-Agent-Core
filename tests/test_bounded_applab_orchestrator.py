@@ -2,6 +2,7 @@
 import copy
 import hashlib
 import hmac
+import time
 import unittest
 from datetime import datetime, timedelta, timezone
 
@@ -26,7 +27,7 @@ POLICY = {"repositories": ["example/app"],
 class Store:
     def __init__(self):
         self.op = {"operation_id": "op_x10", "repository": "example/app",
-                   "resolved_sha": SHA, "current_state": "QUEUED"}
+                   "resolved_sha": SHA, "current_state": "PLANNING"}
     def get_operation(self, id):
         assert id == "op_x10"
         return dict(self.op)
@@ -39,6 +40,11 @@ class Queue:
         self.store = store
         self.items = {}
         self.recover_results = []
+        self.lease = None
+    def _entry(self, operation_id):
+        if operation_id != "op_x10":
+            return None
+        return dict(self.lease) if self.lease is not None else None
     def enqueue(self, operation_id, *, now_ts, max_retries, ancestor_shas=None, ancestry_proven=False):
         status = "REPLAY" if operation_id in self.items else "INSERTED"
         self.items[operation_id] = "QUEUED"
@@ -83,8 +89,10 @@ class OrchestratorTests(unittest.TestCase):
             binding_verifier=binding, work_item_factory=graph_factory)
         self.claim = {"operation_id": "op_x10", "repository": "example/app",
                       "resolved_sha": SHA, "executor": "GITHUB_ACTIONS",
-                      "worker_id": "gha-trusted", "lease_until": 100.,
+                      "worker_id": "gha-trusted", "lease_until": time.time() + 3600,
                       "dispatch_performed": False}
+        self.queue.lease = {**self.claim, "state": "LEASED",
+                            "leased_by": "gha-trusted"}
 
     def test_duplicate_delivery_replays_one_applab_operation(self):
         a = self.orch.stage(JOB, POLICY, "op_x10", now_ts=1)
@@ -114,7 +122,51 @@ class OrchestratorTests(unittest.TestCase):
         with self.assertRaisesRegex(OrchestrationError, "CROSS_JOB_LEASE_MISMATCH"):
             self.orch.prepare_claim(JOB, POLICY, "op_x10", wrong, now_ts=1)
         with self.assertRaisesRegex(OrchestrationError, "LEASE_EXPIRED"):
-            self.orch.prepare_claim(JOB, POLICY, "op_x10", self.claim, now_ts=100)
+            self.orch.prepare_claim(JOB, POLICY, "op_x10", self.claim,
+                                    now_ts=self.claim["lease_until"])
+
+    def test_copied_claim_without_persisted_lease_is_denied(self):
+        self.queue.lease = None
+        with self.assertRaisesRegex(OrchestrationError, "APPLAB_LEASE_NOT_FOUND"):
+            self.orch.prepare_claim(JOB, POLICY, "op_x10", self.claim, now_ts=1)
+
+    def test_superseded_or_stolen_lease_is_denied(self):
+        self.queue.lease["leased_by"] = "other-worker"
+        with self.assertRaisesRegex(OrchestrationError, "APPLAB_LEASE_OWNER_OR_GENERATION"):
+            self.orch.prepare_claim(JOB, POLICY, "op_x10", self.claim, now_ts=1)
+
+    def test_cancelled_operation_blocks_preparing(self):
+        self.store.op["current_state"] = "CANCELLED"
+        with self.assertRaisesRegex(OrchestrationError, "APPLAB_OPERATION_NOT_ACTIVE"):
+            self.orch.prepare_claim(JOB, POLICY, "op_x10", self.claim, now_ts=1)
+
+    def test_expired_or_cancelled_lease_blocks_delayed_patch_before_worker(self):
+        write = copy.deepcopy(JOB)
+        write["mode"] = "propose_diff"
+        o = BoundedAppLabOrchestrator(
+            AppLabQueueBridge(self.store, self.queue),
+            binding_verifier=lambda digest, opid, op: digest == job_digest(write),
+            work_item_factory=graph_factory)
+        self.store.op["current_state"] = "READY"
+        proof = receipt(write)
+        intent = o.prepare_claim(write, POLICY, "op_x10", self.claim, now_ts=1,
+                                 receipt=proof, verifier_key=KEY)
+        calls = []
+        self.queue.lease["leased_by"] = "another-worker"
+        with self.assertRaisesRegex(OrchestrationError, "APPLAB_LEASE_OWNER_OR_GENERATION"):
+            o.propose_bounded_patch(
+                intent, write, POLICY, receipt=proof, verifier_key=KEY,
+                repo_root=None, patch_path=None, investigation={},
+                attempt_number=1, bounded_worker=lambda *a, **k: calls.append(a))
+        self.assertEqual(calls, [])
+        self.queue.lease["leased_by"] = "gha-trusted"
+        self.store.op["current_state"] = "CANCELLED"
+        with self.assertRaisesRegex(OrchestrationError, "APPLAB_OPERATION_NOT_ACTIVE"):
+            o.propose_bounded_patch(
+                intent, write, POLICY, receipt=proof, verifier_key=KEY,
+                repo_root=None, patch_path=None, investigation={},
+                attempt_number=1, bounded_worker=lambda *a, **k: calls.append(a))
+        self.assertEqual(calls, [])
 
     def test_trusted_mapping_needed_before_any_enqueue(self):
         bad = copy.deepcopy(JOB)
