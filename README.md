@@ -56,3 +56,7 @@ Un cron GitHub Actions controlla gli SHA di Core/Ideas/AppLab, aggiorna SOLO il 
 ## X10-012 — workspace guard (source/CI)
 - [Guardia source SHA/scoped worktree](scripts/applab_workspace_gate.py) e [test di regressione](tests/test_applab_workspace_gate.py) davanti al `bounded_fix_worker_v60c` già esistente in AppLab; HMAC, HEAD immutabile, no patch dentro il checkout, max file/linee e verifica che nessuna operazione remote/merge/release sia eseguita.
 - [Confini e rollback](docs/X10-012_ISOLATED_WORKSPACE_GATE.md): il rollback del worktree temporaneo è delegato ad AppLab, non è implementato un secondo patcher. Runtime Windows/consumer, shell isolation e PR restano da integrare in X10-013/014/015.
+
+## X10-013 — bounded orchestration adapter (source/CI)
+- [Coordinator](scripts/bounded_applab_orchestrator.py) + [offline replay and permission fixtures](tests/test_bounded_applab_orchestrator.py): combines X10-010/011/012 with an injected AppLab WorkGraph, validates trusted job→operation binding and already-issued AppLab lease; does NOT allocate a second queue or create/merge PRs.
+- [Trust boundary](docs/X10-013_BOUNDED_ORCHESTRATION.md): synthetic tests only. No real Windows worker, live AppLab invocation or measured autonomous repair until X10-014/015.
