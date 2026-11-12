@@ -71,11 +71,19 @@ class JobGatewayTests(unittest.TestCase):
         j["limits"]={"timeout_seconds":180,"max_attempts":3}
         self.assertEqual(evaluate(j,policy())["reason"],"BUDGET_EXCEEDED")
 
+    def test_bad_policy_types_and_ambiguous_numbers(self):
+        j=job()
+        p=policy()
+        p["repositories"]="riccardopinato/World-Days"
+        self.assertEqual(evaluate(j,p)["reason"],"INVALID_POLICY")
+        j["limits"]["timeout_seconds"]=1.9
+        self.assertEqual(evaluate(j,policy())["reason"],"BUDGET_EXCEEDED")
+
     def test_default_denies_writes(self):
         for mode in ("propose_diff","prepare_pr"):
             result=evaluate(job(mode),policy())
             self.assertEqual(result["reason"],"TRUSTED_APPROVAL_REQUIRED")
-        self.assertEqual(evaluate(job("prepare_pr",paths=[]),policy())["reason"],"EMPTY_WRITE_SCOPE")
+        self.assertEqual(evaluate(job("prepare_pr",paths=[]),policy())["reason"],"BAD_PATH_SET")
 
     def test_trusted_scoped_receipt_allows_proposal_only(self):
         now=datetime(2026,11,12,0,0,0,tzinfo=timezone.utc)
