@@ -24,6 +24,10 @@ class WindowsReceiptTests(unittest.TestCase):
         self.assertEqual(errors, [])
         self.assertNotIn('.env', contents)
 
+    def test_optional_upgrader_missing_is_safe(self):
+        receipt = make_receipt(self.root, export=self.root / 'safe.zip')
+        self.assertEqual(set(receipt['source_files']), set(FILES))
+
     def test_secret_blocks_export(self):
         (self.root / FILES[0]).write_text('token="ghp_' + 'A' * 35 + '"\n', encoding='utf-8')
         with self.assertRaises(ValueError):
