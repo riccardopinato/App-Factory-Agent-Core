@@ -14,6 +14,7 @@ import subprocess
 import sys
 import zipfile
 from datetime import datetime, timezone
+from contextlib import closing
 from pathlib import Path
 
 FILES = ('app_factory_autopilot.py', 'test_autopilot.py')
@@ -57,7 +58,7 @@ def local_jobs(root: Path):
         return {'state': 'NOT_AVAILABLE', 'jobs': []}
     jobs = []
     try:
-        with sqlite3.connect(db.resolve().as_uri() + '?mode=ro', uri=True, timeout=5) as con:
+        with closing(sqlite3.connect(db.resolve().as_uri() + '?mode=ro', uri=True, timeout=5)) as con:
             for row in con.execute('SELECT repo, issue, status, pr, pr_sha, attempts, ci_repairs FROM jobs ORDER BY created_at DESC LIMIT 25'):
                 repo, issue, status, pr, sha, attempts, repairs = row
                 if not (isinstance(repo, str) and REPO.fullmatch(repo)):
