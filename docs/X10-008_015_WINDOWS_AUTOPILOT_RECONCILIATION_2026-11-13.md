@@ -45,6 +45,8 @@ This demonstrates a limited **single-repo PR/CI pilot**, not X10-015's required 
 | Research, QA and evidence | X10-016 + AppLab router | Invoke existing adapters, no duplicate QA service |
 | Dashboard | AppLab Operations Studio | Read-only compatibility view during transition, no remote Windows control |
 
+**Real source adapter (no dispatch):** [`scripts/x10_windows_job_adapter.py`](../scripts/x10_windows_job_adapter.py) projects a SQLite row with **original pinned base SHA** into the existing [`X10-010 gateway`](../scripts/agent_job_gateway.py) job design; `evaluate_legacy_candidate` calls the canonical gateway and cannot mint an approval. A local `agent:dev-pr` label or owned GitHub PR does **not** satisfy a signed control-plane receipt. It does not enqueue in AppLab, create a PR, or run Qwen. Negative tests assert stable replay identity, denied write without signed approval, protected path refusal and missing source rejection.
+
 **Migration gate:** take private source inventory and preserve database backup; run a shadow, read-only migration comparison; verify job-by-job idempotency (including #6 and #19), permissions, cancellation and restart. Stop old scheduler *before* enabling the AppLab-backed writer; never delete local SQLite until deterministic replay and backup/restore pass. No bridge in this PR starts either scheduler.
 
 ### Concrete acceptance to unblock X10-008 / X10-015
