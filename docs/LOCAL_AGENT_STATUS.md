@@ -37,3 +37,11 @@ L'agente GBrain su WSL esiste come infrastruttura separata, non confonderlo con 
 3. Portare solo sorgente e test su branch dedicato con revisione delle credenziali.
 4. Eseguire test sintetici in un ambiente pulito; confrontare gli output dei singoli livelli.
 5. Solo dopo aggiornare README, ROADMAP, PROVENANCE con exact commit e prove.
+
+## Addendum — Autopilot v0.5.1 / v0.6.0, 13/11/2026
+
+**SOURCE_INSPECTED_IN_CONVERSATION / NOT_CANONICALLY_IMPORTED:** il pacchetto originale v0.6.0 e i suoi test sono disponibili come allegati di conversazione. Il ZIP ha SHA-256 `c5af037f9a00f340f26a6d020a0b9cb842928b298e5b48d377bb46407f8f7da2`; 28 test Python locali sul pacchetto hanno superato la suite, ma non sono test Windows indipendenti né attestazioni AppLab. Vedi [dossier X10-008/015](X10-008_015_WINDOWS_AUTOPILOT_RECONCILIATION_2026-11-13.md) per manifest per-file, provenance, compatibilità e restrizioni.
+
+**USER_REPORTED_WINDOWS:** output PowerShell v0.6.0 `1 attivita`, issue #6 `ci_pass`, PR #7, `repair=0`. Su GitHub PR #7 esiste e ha CI PASS all'exact-head `92530c4a8d41c2834655275d667fab7824e60598`; una correzione di indentazione finale è stata applicata separatamente tramite ChatGPT, non dal worker locale.
+
+**NO PROMOTION:** X10-008 resta bloccato dall'import privato e secret/provenance review; X10-015 resta pianificato per controllo runtime con due repo, process crash/restart/replay, approvazione X10-010 e AppLab queue/pr steward. La nuova utility [x10_windows_autopilot_receipt.py](../scripts/x10_windows_autopilot_receipt.py) produce solo evidence minimale in sola lettura e NON connette o sostituisce la coda.
