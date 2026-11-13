@@ -94,13 +94,16 @@ def remote_evidence(jobs):
             result['pr_exact_head'] = pr.get('head', {}).get('sha') == sha
             result['draft'] = pr.get('draft') is True and pr.get('state') == 'open'
             result['pr_url'] = pr.get('html_url') if result['pr_exact_head'] else None
+            result['ci_gate'] = 'INDEPENDENT_REQUIRED_CHECKS_AND_REVIEW_NEEDED'
             if result['pr_exact_head'] and result['draft']:
                 runs = gh_read_json(f'repos/{repo}/actions/runs?head_sha={sha}&per_page=100')
-                result['ci_exact_head_pass'] = any(
+                result['observed_green_pr_workflow_run'] = any(
                     run.get('head_sha') == sha and run.get('status') == 'completed' and
                     run.get('conclusion') == 'success' and run.get('event') == 'pull_request'
                     for run in runs.get('workflow_runs', [])
                 )
+                # Do not mint a required-check PASS from a partial/untrusted API view.
+                # AppLab X10-014 independently verifies full policy + review receipt.
         except (RuntimeError, ValueError, OSError, subprocess.TimeoutExpired):
             result['remote_read'] = 'UNAVAILABLE'
         results.append(result)
@@ -131,7 +134,7 @@ def make_receipt(root: Path, check_github: bool = False, export: Path | None = N
         'no_main_or_queue_changes_performed': True,
     }
     if export is not None:
-        if problems or len(contents) != len(FILES):
+        if problems or any(name not in contents for name in FILES):
             raise ValueError('PRIVATE_EXPORT_BLOCKED_SOURCE_REVIEW_REQUIRED')
         export.parent.mkdir(parents=True, exist_ok=True)
         if export.exists():
