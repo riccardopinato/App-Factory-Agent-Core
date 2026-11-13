@@ -16,7 +16,8 @@ import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-FILES = ('app_factory_autopilot.py', 'test_autopilot.py', 'upgrade_autopilot_v060.ps1')
+FILES = ('app_factory_autopilot.py', 'test_autopilot.py')
+OPTIONAL_FILES = ('upgrade_autopilot_v060.ps1',)
 DENY = (
     re.compile(rb'gh[pousr]_[A-Za-z0-9]{20,}'),
     re.compile(rb'github_pat_[A-Za-z0-9_]{24,}'),
@@ -34,8 +35,10 @@ def digest(data: bytes) -> str:
 
 def source_inventory(root: Path):
     inventory, errors, contents = {}, [], {}
-    for name in FILES:
+    for name in FILES + OPTIONAL_FILES:
         f = root / name
+        if name in OPTIONAL_FILES and not f.exists():
+            continue
         if not f.is_file() or f.is_symlink() or f.stat().st_size > 200_000:
             errors.append('SOURCE_MISSING_OR_UNSAFE:' + name)
             continue
