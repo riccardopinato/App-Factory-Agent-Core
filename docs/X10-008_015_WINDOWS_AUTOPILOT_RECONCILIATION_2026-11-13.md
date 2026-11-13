@@ -64,6 +64,6 @@ cd "$HOME\AppFactoryAgent"
 python .\x10_windows_autopilot_receipt.py --root . --github-read-only --out .\autopilot-state\x10_receipt.json
 ```
 
-The `--export-private` option writes a ZIP containing only a strict source allowlist; it **never uploads**. The receipt omits prompt bodies, logs, local user paths and SQLite contents. Review both files offline before transfer. Do not post ZIP or unsanitized logs to public GitHub.
+The `--export-private` option writes a ZIP containing only a strict source allowlist; it **never uploads**. The receipt omits prompt bodies, logs, local user paths and SQLite contents. A GitHub workflow marked green by this helper is **observational only**: it never sets an exact-head required-CI PASS, which remains delegated to the existing X10-014 AppLab steward and independently reviewed check policy. The optional PowerShell updater may be absent from the installed root and is not required for private source export. Review both files offline before transfer. Do not post ZIP or unsanitized logs to public GitHub.
 
 **Current verdict:** X10-008 = SOURCE_RECOVERED_LOCAL, CANONICAL_IMPORT_BLOCKED. X10-015 = SINGLE_REPO_GITHUB_CI_OBSERVED, TWO_REPO_WINDOWS_E2E_NOT_VERIFIED. No merge or automatic action authorized.
