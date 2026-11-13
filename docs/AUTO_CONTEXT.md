@@ -5,8 +5,8 @@
 | Repository | Utilizzo | Branch | SHA | Data commit (UTC) |
 |---|---|---|---|---|
 | [riccardopinato/App-Factory-Core](https://github.com/riccardopinato/App-Factory-Core) | Governance Master e Golden | `main` | [`c5adc147046b`](https://github.com/riccardopinato/App-Factory-Core/commit/c5adc147046beb7024629466d10eeb799c3c2619) | 2026-11-11T12:33:47Z |
-| [riccardopinato/AppLab](https://github.com/riccardopinato/AppLab) | QA e affidabilità agentica | `main` | [`7d07e0fae2cc`](https://github.com/riccardopinato/AppLab/commit/7d07e0fae2cc709d09ce5512efb160b9d4b4faa7) | 2026-11-12T01:20:05Z |
-| [riccardopinato/Idee-app-Archivi-riferimenti](https://github.com/riccardopinato/Idee-app-Archivi-riferimenti) | Idee e capability | `main` | [`001df17264ca`](https://github.com/riccardopinato/Idee-app-Archivi-riferimenti/commit/001df17264cadbf7d7492f25557a3b4562cbf0a4) | 2026-11-12T13:35:57Z |
+| [riccardopinato/AppLab](https://github.com/riccardopinato/AppLab) | QA e affidabilità agentica | `main` | [`0b45e4a474fe`](https://github.com/riccardopinato/AppLab/commit/0b45e4a474fe958a141430a6447c50ccf6d114b2) | 2026-11-13T01:23:45Z |
+| [riccardopinato/Idee-app-Archivi-riferimenti](https://github.com/riccardopinato/Idee-app-Archivi-riferimenti) | Idee e capability | `main` | [`9a7aedfcffdf`](https://github.com/riccardopinato/Idee-app-Archivi-riferimenti/commit/9a7aedfcffdfbd77db420159968882d166ee423f) | 2026-11-13T01:22:50Z |
 
 I cambiamenti indicano nuovi commit, non modifiche automaticamente approvate o importate nei moduli.
 
