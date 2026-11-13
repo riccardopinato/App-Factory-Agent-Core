@@ -28,6 +28,35 @@ class WindowsReceiptTests(unittest.TestCase):
         receipt = make_receipt(self.root, export=self.root / 'safe.zip')
         self.assertEqual(set(receipt['source_files']), set(FILES))
 
+    def test_optional_upgrader_present_still_exports(self):
+        import zipfile
+        (self.root / 'upgrade_autopilot_v060.ps1').write_text('Write-Host OK', encoding='utf-8')
+        dest = self.root / 'with-upgrade.zip'
+        make_receipt(self.root, export=dest)
+        with zipfile.ZipFile(dest) as archive:
+            self.assertIn('source/upgrade_autopilot_v060.ps1', archive.namelist())
+
+    def test_partial_ci_success_cannot_mint_exact_pass(self):
+        from unittest.mock import patch
+        from scripts.x10_windows_autopilot_receipt import remote_evidence
+
+        def fetch(name):
+            if '/pulls/' in name:
+                return {'head': {'sha': 'a' * 40}, 'draft': True, 'state': 'open',
+                        'html_url': 'https://github.com/riccardopinato/180FlipCharge/pull/7'}
+            return {'workflow_runs': [
+                {'head_sha': 'a' * 40, 'status': 'completed', 'conclusion': 'success',
+                 'event': 'pull_request'},
+                {'head_sha': 'a' * 40, 'status': 'completed', 'conclusion': 'failure',
+                 'event': 'pull_request'}]}
+
+        jobs = [{'repo': 'riccardopinato/180FlipCharge', 'pr': 7, 'pr_head_sha': 'a' * 40}]
+        with patch('scripts.x10_windows_autopilot_receipt.gh_read_json', side_effect=fetch):
+            evidence = remote_evidence(jobs)[0]
+        self.assertTrue(evidence['observed_green_pr_workflow_run'])
+        self.assertFalse(evidence['ci_exact_head_pass'])
+        self.assertEqual(evidence['ci_gate'], 'INDEPENDENT_REQUIRED_CHECKS_AND_REVIEW_NEEDED')
+
     def test_secret_blocks_export(self):
         (self.root / FILES[0]).write_text('token="ghp_' + 'A' * 35 + '"\n', encoding='utf-8')
         with self.assertRaises(ValueError):
