@@ -8,7 +8,6 @@ and expected repository/SHA are checked. No job launch, approval or merge.
 from __future__ import annotations
 
 from datetime import datetime, timezone
-import re
 from typing import Any, Callable
 
 try:
@@ -27,7 +26,7 @@ RUN_CONCLUSION = frozenset({
     "success", "failure", "cancelled", "timed_out", "skipped",
     "neutral", "action_required", "stale", "startup_failure"
 })
-RUN_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 _.:/-]{0,119}$")
+
 MAX_RUNS = 32
 MAX_BATCH = 12
 
@@ -108,7 +107,7 @@ class FactoryEvidenceGateway(FactoryReadOnlyGateway):
                 raise EvidenceGatewayError("CI_RUN_MALFORMED")
             name, rid = run.get("name"), run.get("run_id")
             status, conclusion = run.get("status"), run.get("conclusion")
-            if (not isinstance(name, str) or RUN_NAME.fullmatch(name) is None
+            if (not isinstance(name, str) or not 1 <= len(name) <= 120 or not name.strip() or not name.isprintable()
                     or type(rid) is not int or rid <= 0 or rid in seen
                     or status not in RUN_STATUS or
                     (conclusion is not None and conclusion not in RUN_CONCLUSION)
