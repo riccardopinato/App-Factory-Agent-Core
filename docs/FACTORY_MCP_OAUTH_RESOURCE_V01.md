@@ -34,3 +34,21 @@
 Also run `test_factory_mcp_runtime_gate.py` for the existing owner gate. Tests create ephemeral RSA 2048-bit keys in memory, produce signed **synthetic** access tokens and run positive and rejection cases. No provider, OAuth account, access token or TCP listener is contacted.
 
 **Evidence boundary:** Offline cryptographic verification can establish correct verification logic against synthetic tokens. It does **not** prove actual OAuth issuer configuration, remote resource metadata delivery, successful client authorization, session revocation, TLS, production runtime or availability. No automated merge or public deploy.
+
+
+## ASGI request boundary (PR #34 follow-up)
+
+`scripts/factory_mcp_oauth_asgi.py` now adds an inert ASGI wrapper for **one host-mounted** read-only MCP application. The wrapper:
+- exposes the protected resource metadata JSON at `/.well-known/oauth-protected-resource/mcp` (GET) and emits RFC 9728 `WWW-Authenticate` on 401;
+- rejects Host mismatch, unallowlisted Origin, duplicate Authorization, unsupported methods, unknown paths and tokens invalid under the issuer-pinned verifier **before** calling the downstream MCP app;
+- verifies the bearer from the trusted ASGI request header, not from tool arguments, and places only the verified owner identity in a `ContextVar`;
+- makes that identity available to the existing `FactoryRuntimeGate` through `host.current_identity`; a request lease becomes inactive when its ASGI call ends, so an inherited task context cannot revive an earlier request;
+- starts no socket and has no independent credentials, Job API, AppLab queue or provider configuration.
+
+The host must wire a real vetted MCP SDK ASGI app to the wrapper and must **not** mount an administrative/write API underneath it. The host must control TLS termination and trusted reverse-proxy Host/Origin behavior. Approved browser origins must be configured explicitly: absence of `Origin` is normal for some nonbrowser OAuth clients, but an unknown `Origin` is rejected. OAuth/JWKS verification is synchronous here: provide only a bounded cache lookup in request processing, not network I/O from the event loop. Cache staleness and revocation remain host obligations.
+
+Offline ASGI test:
+`python3 -m unittest discover -s tests -p 'test_factory_mcp_oauth_asgi.py' -v`.
+It uses fake ASGI requests and synthetic signed tokens, **not** real HTTP/TLS, OAuth authorization, GitHub permissions, AppLab runtime or ChatGPT connectivity.
+
+Remote deployment, actual provider registration, independent adversarial review and all merge/release gates remain **NOT VERIFIED**.
