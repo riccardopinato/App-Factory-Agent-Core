@@ -1,0 +1,31 @@
+name: Factory MCP OAuth resource boundary — offline cryptographic tests
+on:
+  pull_request:
+    paths:
+      - 'scripts/factory_mcp_oauth_resource.py'
+      - 'scripts/factory_mcp_oauth_asgi.py'
+      - 'scripts/factory_mcp_runtime_gate.py'
+      - 'scripts/factory_mcp_readonly.py'
+      - 'tests/test_factory_mcp_oauth_resource.py'
+      - 'tests/test_factory_mcp_oauth_asgi.py'
+      - '.github/workflows/factory-mcp-oauth-resource.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  oauth-resource-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact PR source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install pinned verifier and cryptographic runtime
+        run: python3 -m pip install --disable-pip-version-check --no-input 'PyJWT[crypto]==2.10.1'
+      - name: Compile and execute signed JWT rejection matrix
+        run: |
+          python3 -m compileall -q scripts/factory_mcp_oauth_resource.py scripts/factory_mcp_oauth_asgi.py tests/test_factory_mcp_oauth_resource.py tests/test_factory_mcp_oauth_asgi.py
+          python3 -m unittest discover -s tests -p 'test_factory_mcp_oauth_resource.py' -v
+          python3 -m unittest discover -s tests -p 'test_factory_mcp_oauth_asgi.py' -v
+          python3 -m unittest discover -s tests -p 'test_factory_mcp_runtime_gate.py' -v
