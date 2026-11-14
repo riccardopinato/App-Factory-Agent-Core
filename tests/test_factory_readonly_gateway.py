@@ -109,6 +109,17 @@ class ReadOnlyGatewayTests(unittest.TestCase):
         self.assertFalse(out["ci_verified"])
         self.assertFalse(out["certification_granted"])
 
+    def test_upstream_store_errors_are_sanitized(self):
+        class FailingStore:
+            def get_operation(self, operation_id):
+                raise RuntimeError("SECRET_INTERNAL_DB_PATH")
+        gw = FactoryReadOnlyGateway(
+            allowed_repositories=[REPO], github_head_reader=self.gh,
+            applab_store=FailingStore())
+        with self.assertRaisesRegex(StatusGatewayError, "APPLAB_READ_FAILED") as cm:
+            gw.operation_status(OP, repository=REPO, source_sha=SHA)
+        self.assertNotIn("SECRET_INTERNAL_DB_PATH", str(cm.exception))
+
     def test_missing_host_provider_is_rejected(self):
         with self.assertRaisesRegex(StatusGatewayError, "READ_PROVIDERS_MISSING"):
             FactoryReadOnlyGateway(allowed_repositories=[REPO],
