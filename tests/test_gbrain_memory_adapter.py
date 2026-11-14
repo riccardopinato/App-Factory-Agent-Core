@@ -58,6 +58,20 @@ class GBrainMemoryAdapterTests(unittest.TestCase):
                {**FACT, "fact": "-----BEGIN PRIVATE KEY-----\n..."}]
         self.assertEqual(project_recall(envelope(bad), now=NOW)["facts"], [])
 
+    def test_credential_like_source_and_fact_ids_do_not_escape(self):
+        bad = [
+            {**FACT, "source_id": "ghp_" + "A" * 24},
+            {**FACT, "fact_id": "github_pat_" + "Z" * 28},
+            {**FACT, "fact_id": "gho_" + "b" * 24},
+        ]
+        self.assertEqual(project_recall(envelope(bad), now=NOW)["facts"], [])
+        self.assertEqual(project_recall(envelope([FACT]), now=NOW)["facts"][0]["source_id"], "default")
+
+    def test_dedup_processed_before_limit(self):
+        record = {**FACT, "fact_id": "2"}
+        out = project_recall(envelope([FACT, FACT, record]), now=NOW, max_facts=2)
+        self.assertEqual([x["fact_id"] for x in out["facts"]], ["1", "2"])
+
     def test_fact_dedup_and_bounded_output(self):
         result = project_recall(envelope([FACT, FACT, {**FACT, "fact_id": "2"}]), now=NOW,
                                 max_facts=1)
