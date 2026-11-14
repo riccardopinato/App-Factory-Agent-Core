@@ -101,7 +101,10 @@ def project_recall(
             continue
         if not isinstance(fid, (str, int)) or isinstance(fid, bool) or not (1 <= len(str(fid)) <= 128):
             continue
-        if SENSITIVE.search(fact):
+        # Every projected string field is untrusted, including identifiers:
+        # do not let credential-shaped tokens escape in the metadata channel.
+        if (SENSITIVE.search(fact) or SENSITIVE.search(source)
+                or SENSITIVE.search(str(fid))):
             continue
         key = (source, str(fid))
         if key in seen:
