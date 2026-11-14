@@ -53,6 +53,8 @@ class GBrainMemoryAdapterTests(unittest.TestCase):
 
     def test_secrets_are_not_returned(self):
         bad = [{**FACT, "fact": "token ghp_" + "a" * 24},
+               {**FACT, "fact": "token github_pat_" + "B" * 28},
+               {**FACT, "fact": "-----BEGIN ENCRYPTED PRIVATE KEY-----"},
                {**FACT, "fact": "-----BEGIN PRIVATE KEY-----\n..."}]
         self.assertEqual(project_recall(envelope(bad), now=NOW)["facts"], [])
 
