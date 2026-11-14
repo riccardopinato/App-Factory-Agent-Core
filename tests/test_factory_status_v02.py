@@ -92,6 +92,15 @@ class EvidenceTests(unittest.TestCase):
         with self.assertRaisesRegex(EvidenceGatewayError, "STALE"):
             self.gw.pull_request_evidence(REPO, 27, now=NOW)
 
+    def test_printable_unicode_workflow_name_is_accepted(self):
+        self.ci_data["runs"][0]["name"] = "Factory gateway — pinned AppLab store integration"
+        result = self.gw.pull_request_evidence(REPO, 27, now=NOW)
+        self.assertEqual(result["ci_state"], "ALL_OBSERVED_CHECKS_SUCCESS")
+        self.assertEqual(result["checks"][0]["name"], "Factory gateway — pinned AppLab store integration")
+        self.ci_data["runs"][0]["name"] = "Build\nInjected"
+        with self.assertRaisesRegex(EvidenceGatewayError, "CI_RUN_MALFORMED"):
+            self.gw.pull_request_evidence(REPO, 27, now=NOW)
+
     def test_duplicate_run_fails_closed(self):
         self.ci_data["runs"] *= 2
         with self.assertRaisesRegex(EvidenceGatewayError, "CI_RUN_MALFORMED"):
