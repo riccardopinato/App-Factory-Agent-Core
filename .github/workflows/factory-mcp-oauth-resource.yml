@@ -3,9 +3,11 @@ on:
   pull_request:
     paths:
       - 'scripts/factory_mcp_oauth_resource.py'
+      - 'scripts/factory_mcp_oauth_asgi.py'
       - 'scripts/factory_mcp_runtime_gate.py'
       - 'scripts/factory_mcp_readonly.py'
       - 'tests/test_factory_mcp_oauth_resource.py'
+      - 'tests/test_factory_mcp_oauth_asgi.py'
       - '.github/workflows/factory-mcp-oauth-resource.yml'
   workflow_dispatch:
 permissions:
@@ -23,6 +25,7 @@ jobs:
         run: python3 -m pip install --disable-pip-version-check --no-input 'PyJWT[crypto]==2.10.1'
       - name: Compile and execute signed JWT rejection matrix
         run: |
-          python3 -m compileall -q scripts/factory_mcp_oauth_resource.py tests/test_factory_mcp_oauth_resource.py
+          python3 -m compileall -q scripts/factory_mcp_oauth_resource.py scripts/factory_mcp_oauth_asgi.py tests/test_factory_mcp_oauth_resource.py tests/test_factory_mcp_oauth_asgi.py
           python3 -m unittest discover -s tests -p 'test_factory_mcp_oauth_resource.py' -v
+          python3 -m unittest discover -s tests -p 'test_factory_mcp_oauth_asgi.py' -v
           python3 -m unittest discover -s tests -p 'test_factory_mcp_runtime_gate.py' -v
