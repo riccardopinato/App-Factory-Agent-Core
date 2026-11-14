@@ -24,7 +24,7 @@ from scripts.factory_mcp_runtime_gate import FactoryRuntimeGate
 REPO = "riccardopinato/AppLab"
 SHA = "b" * 40
 BASE = "a" * 40
-NOW = datetime(2026, 11, 14, tzinfo=timezone.utc)
+NOW = datetime.now(timezone.utc)  # shared fixture clock sampled at execution, never a stale hardcoded date
 GBRAIN = os.environ.get("GBRAIN_PROJECTION_CHECKOUT")
 APPLAB = os.environ.get("APPLAB_CHECKOUT")
 
