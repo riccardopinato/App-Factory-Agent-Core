@@ -97,7 +97,7 @@ class EvidenceTests(unittest.TestCase):
         result = self.gw.pull_request_evidence(REPO, 27, now=NOW)
         self.assertEqual(result["ci_state"], "ALL_OBSERVED_CHECKS_SUCCESS")
         self.assertEqual(result["checks"][0]["name"], "Factory gateway — pinned AppLab store integration")
-        self.ci_data["runs"][0]["name"] = "Build\\nInjected"
+        self.ci_data["runs"][0]["name"] = "Build\nInjected"
         with self.assertRaisesRegex(EvidenceGatewayError, "CI_RUN_MALFORMED"):
             self.gw.pull_request_evidence(REPO, 27, now=NOW)
 
