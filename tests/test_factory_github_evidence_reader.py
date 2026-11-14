@@ -82,6 +82,12 @@ class ConnectorTests(unittest.TestCase):
         with self.assertRaisesRegex(GitHubEvidenceReaderError, "CI_INCOMPLETE_OR_UNBOUNDED"):
             self.read.read_ci(REPO, SHA)
 
+    def test_incomplete_run_page_within_limit_is_rejected(self):
+        self.fetch.ci["total_count"] = 2
+        self.fetch.ci["workflow_runs"] = self.fetch.ci["workflow_runs"][:1]
+        with self.assertRaisesRegex(GitHubEvidenceReaderError, "CI_INCOMPLETE_OR_UNBOUNDED"):
+            self.read.read_ci(REPO, SHA)
+
     def test_default_clocks_compose_without_future_error(self):
         adapter = GitHubEvidenceConnector(
             trusted_fetch=self.fetch, allowed_repositories=[REPO])
