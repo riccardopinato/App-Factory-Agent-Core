@@ -1,0 +1,44 @@
+name: Factory full read-only pinned source integration
+on:
+  pull_request:
+    paths:
+      - 'tests/test_factory_full_readonly_harness.py'
+      - '.github/workflows/factory-full-readonly-pinned.yml'
+      - 'scripts/factory_mcp_*'
+      - 'scripts/factory_status_v02.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pinned-source-inprocess:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout Agent Core candidate
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout pinned GBrain projector and quality diagnostics at PR #31
+        uses: actions/checkout@v4
+        with:
+          repository: riccardopinato/App-Factory-Agent-Core
+          ref: 11e9c8ed834838ebe49a7c68693daa84ccffdfd7
+          path: upstream-gbrain
+          persist-credentials: false
+      - name: Checkout pinned public AppLab source
+        uses: actions/checkout@v4
+        with:
+          repository: riccardopinato/AppLab
+          ref: 0b45e4a474fe958a141430a6447c50ccf6d114b2
+          path: upstream-applab
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned official MCP SDK
+        run: python -m pip install --disable-pip-version-check --no-input 'mcp==2.3.0'
+      - name: Validate integrated trust domains without a live network
+        run: |
+          GBRAIN_PROJECTION_CHECKOUT="$GITHUB_WORKSPACE/upstream-gbrain" \
+          APPLAB_CHECKOUT="$GITHUB_WORKSPACE/upstream-applab" \
+            python -m unittest discover -s tests -p 'test_factory_full_readonly_harness.py' -v
