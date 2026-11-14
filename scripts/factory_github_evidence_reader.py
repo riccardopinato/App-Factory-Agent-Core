@@ -113,7 +113,7 @@ class GitHubEvidenceConnector:
             f"?head_sha={head_sha}&event=pull_request&per_page={MAX_RUNS}"
         )
         rows, total = data.get("workflow_runs"), data.get("total_count")
-        if not isinstance(rows, list) or type(total) is not int or total < 0 or total > MAX_RUNS or len(rows) > MAX_RUNS:
+        if not isinstance(rows, list) or type(total) is not int or total < 0 or total > MAX_RUNS or len(rows) > MAX_RUNS or len(rows) != total:
             raise GitHubEvidenceReaderError("CI_INCOMPLETE_OR_UNBOUNDED")
         runs = []
         for row in rows:
