@@ -29,12 +29,12 @@ GBRAIN = os.environ.get("GBRAIN_PROJECTION_CHECKOUT")
 APPLAB = os.environ.get("APPLAB_CHECKOUT")
 
 
-def real_projector():
-    source = Path(GBRAIN) / "scripts/gbrain_memory_adapter.py"
-    spec = importlib.util.spec_from_file_location("gbrain_projector_e2e_pinned", source)
+def real_gbrain_module(module_name: str):
+    source = Path(GBRAIN) / "scripts" / (module_name + ".py")
+    spec = importlib.util.spec_from_file_location(module_name + "_e2e_pinned", source)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return module.project_recall
+    return module
 
 
 def real_store():
@@ -136,8 +136,16 @@ class FullReadOnlyIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 memory = FactoryMemoryContext(
                     owner_bound_service=owner,
                     trusted_gbrain_recall=lambda *, query, budget_tokens: recall,
-                    pinned_projection=real_projector(),
+                    pinned_projection=real_gbrain_module("gbrain_memory_adapter").project_recall,
                 )
+                quality_module = real_gbrain_module("gbrain_recall_quality")
+                projected = real_gbrain_module("gbrain_memory_adapter").project_recall(
+                    recall, max_facts=8)
+                diagnostic = quality_module.evaluate_recall_quality("App Factory", projected)
+                self.assertEqual(diagnostic["admitted_fact_count"], 1)
+                self.assertEqual(diagnostic["search_mode"], "KEYWORD_ONLY_DEGRADED")
+                self.assertFalse(diagnostic["relevance_verified"])
+                self.assertFalse(diagnostic["certification_granted"])
                 mcp = build_mcp_server(owner, memory_context=memory)
                 async with Client(mcp) as client:
                     available = await client.list_tools()
