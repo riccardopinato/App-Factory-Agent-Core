@@ -1,0 +1,40 @@
+name: Factory MCP SDK v2 read-only contract
+on:
+  pull_request:
+    paths:
+      - 'scripts/factory_mcp_readonly.py'
+      - 'tests/test_factory_mcp_readonly.py'
+      - 'scripts/factory_mcp_memory_context.py'
+      - 'tests/test_factory_mcp_memory_context.py'
+      - 'tests/test_factory_mcp_memory_projector_real.py'
+      - '.github/workflows/factory-mcp-sdk.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sdk-inprocess:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout GBrain projector at exact reviewed PR #26 HEAD
+        uses: actions/checkout@v4
+        with:
+          repository: riccardopinato/App-Factory-Agent-Core
+          ref: 3a3818d47da0a8b55ca12b82043893e095eba9d1
+          path: upstream-gbrain-projection
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install official MCP Python SDK v2.3.0
+        run: python -m pip install --disable-pip-version-check --no-input 'mcp==2.3.0'
+      - name: Validate official SDK version and in-process MCP tools
+        run: |
+          python -c 'import mcp.server; from mcp.server import MCPServer; from mcp.client import Client; print("MCP_SDK_AVAILABLE")'
+          python -m unittest discover -s tests -p 'test_factory_mcp_readonly.py' -v
+          python -m unittest discover -s tests -p 'test_factory_mcp_memory_context.py' -v
+          GBRAIN_PROJECTION_CHECKOUT="$GITHUB_WORKSPACE/upstream-gbrain-projection" \
+            python -m unittest discover -s tests -p 'test_factory_mcp_memory_projector_real.py' -v
