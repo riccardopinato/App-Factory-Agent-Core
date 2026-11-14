@@ -3,6 +3,7 @@ from datetime import datetime, timezone, timedelta
 import unittest
 
 from scripts.factory_status_v02 import FactoryEvidenceGateway, EvidenceGatewayError
+from scripts.factory_readonly_gateway import StatusGatewayError
 
 REPO = "riccardopinato/AppLab"
 SHA = "a" * 40
@@ -106,7 +107,7 @@ class EvidenceTests(unittest.TestCase):
         reqs = [{"repository": REPO, "number": 27, "expected_head_sha": SHA},
                 {"repository": "riccardopinato/World-Days", "number": 1,
                  "expected_head_sha": SHA}]
-        with self.assertRaisesRegex(EvidenceGatewayError, "NOT_AUTHORIZED"):
+        with self.assertRaisesRegex(StatusGatewayError, "NOT_AUTHORIZED"):
             self.gw.pull_request_batch(reqs, now=NOW)
         self.assertEqual(self.calls, [])
 
