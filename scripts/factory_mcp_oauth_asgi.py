@@ -43,11 +43,18 @@ class FactoryOAuthAsgiBoundary:
                  allowed_origins: frozenset[str] = frozenset()):
         if not callable(downstream_app) or not isinstance(allowed_origins, frozenset):
             raise FactoryOAuthError("OAUTH_CONFIGURATION_INVALID")
-        if (any(not isinstance(o, str) or not o.startswith("https://")
-                or not o.endswith(("/", ".com", ".net", ".org", ".test"))
-                for o in allowed_origins)):
-            # Origin validation is exact below; do not silently allow HTTP/wildcards.
-            raise FactoryOAuthError("OAUTH_CONFIGURATION_INVALID")
+        for origin in allowed_origins:
+            try:
+                parsed = urlsplit(origin)
+                valid = (isinstance(origin, str) and parsed.scheme == "https"
+                         and bool(parsed.hostname) and parsed.username is None
+                         and parsed.password is None and parsed.path in ("", "/")
+                         and not parsed.query and not parsed.fragment
+                         and "*" not in parsed.netloc)
+            except (ValueError, TypeError):
+                valid = False
+            if not valid:
+                raise FactoryOAuthError("OAUTH_CONFIGURATION_INVALID")
         self._bearer = ContextVar("factory_asgi_auth_header", default="")
         self._identity = ContextVar("factory_asgi_owner_lease", default=None)
         self._verifier = FactoryJwtOwnerIdentity(
