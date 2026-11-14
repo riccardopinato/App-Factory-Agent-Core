@@ -87,7 +87,7 @@ def project_recall(
         if not isinstance(item, dict):
             raise GBrainMemoryError("INVALID_FACT")
         tier, visibility = item.get("trust_tier"), item.get("visibility")
-        if tier not in allowed_tiers or visibility != "world":
+        if not isinstance(tier, str) or tier not in allowed_tiers or visibility != "world":
             continue
         if item.get("expired_at") is not None or item.get("superseded_by") is not None or item.get("quarantined") is True:
             continue
