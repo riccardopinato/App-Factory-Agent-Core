@@ -71,6 +71,17 @@ class PrivateSourcePrecheckTests(unittest.TestCase):
         out = evaluate_private_source_candidate(r, current_factory_sha=CURRENT)
         self.assertIn("REQUIRED_SOURCE_FILES_MISSING", out["blockers"])
 
+    def test_rejected_local_windows_paths_are_never_echoed(self):
+        r = report()
+        sensitive = r"C:\\Users\\Owner\\private-client\\credentials.env"
+        r["source_files"][sensitive] = {"sha256": "f" * 64, "bytes": 3}
+        out = evaluate_private_source_candidate(r, current_factory_sha=CURRENT)
+        self.assertEqual(out["state"], "BLOCKED")
+        self.assertEqual(out["unrecognized_file_count"], 1)
+        self.assertNotIn(sensitive, str(out))
+        self.assertNotIn("credentials.env", str(out))
+        self.assertEqual(set(out["source_files_seen"]), set(r["source_files"]) - {sensitive})
+
     def test_source_scan_and_premature_claims_are_refused(self):
         r = report()
         r["source_problems"] = ["SOURCE_REQUIRES_PRIVATE_REVIEW"]
