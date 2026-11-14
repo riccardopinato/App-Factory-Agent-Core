@@ -37,3 +37,8 @@ Test cases include invalid caller repositories, duplicate batches, stale/future 
 2. Implement a provider-authenticated public/private GitHub status reader scoped to the user's repositories; reject guessed state.
 3. Map the two read projections to **actual** authenticated ChatGPT-visible tools after provider/plan capability has been verified, without using GBrain as a command runner.
 4. Later add a status/dashboard consumer; unrelated Windows Autopilot writes remain paused.
+
+## Concrete GitHub connector read seam (source addition)
+`scripts/factory_github_connector_reader.py::GitHubConnectorHeadReader` builds the bounded, read-only authenticated **GitHub connector** branch GET from a host-controlled repo→branch map. It consumes the observed `mcp__GitHub__fetch` envelope (`result.content` containing branch JSON) and returns the metadata required by `FactoryReadOnlyGateway`. It never stores or requests a separate PAT. URL host is fixed to `api.github.com`; branch path is URL-encoded and repo allowlisted. The host must still provide the existing connected GitHub fetch action; this Python adapter cannot directly invoke a ChatGPT plugin by itself.
+
+The offline integration test composes `GitHubConnectorHeadReader` with `FactoryReadOnlyGateway` and a fake AppLab store to check identity and output. **Not a live GitHub-to-AppLab MCP deployment.**
