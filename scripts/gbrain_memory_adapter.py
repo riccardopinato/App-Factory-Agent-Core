@@ -15,8 +15,8 @@ from typing import Any
 DEFAULT_TIERS = frozenset({"user_confirmed", "operator_curated", "tool_observed"})
 KNOWN_TIERS = DEFAULT_TIERS | {"agent_written", "unknown", "external_untrusted"}
 SENSITIVE = re.compile(
-    r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"
-    r"|\b(?:gh[pousr]_[A-Za-z0-9_]{12,}|sk-(?:proj-)?[A-Za-z0-9_-]{16,})",
+    r"-----BEGIN (?:(?:RSA|EC|OPENSSH|ENCRYPTED) )?PRIVATE KEY-----"
+    r"|\b(?:github_pat_[A-Za-z0-9_]{12,}|gh[pousr]_[A-Za-z0-9_]{12,}|sk-(?:proj-)?[A-Za-z0-9_-]{16,})",
     re.IGNORECASE,
 )
 MAX_BYTES = 256 * 1024
