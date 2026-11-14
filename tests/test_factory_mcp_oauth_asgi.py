@@ -83,7 +83,9 @@ class AsgiAuthTests(unittest.TestCase):
             }
             async def receive():
                 return {"type": "http.request", "body": b"", "more_body": False}
-            await self.host(scope, receive, sent.append)
+            async def send(message):
+                sent.append(message)
+            await self.host(scope, receive, send)
             late = await self.saved_task if self.saved_task else None
             return late
         late = asyncio.run(do())
