@@ -13,7 +13,7 @@ from typing import Any, Callable, Iterable
 
 REPO = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 SHA = re.compile(r"^[0-9a-f]{40}$")
-OP_ID = re.compile(r"^[A-Za-z0-9_.:/-]{1,128}$")
+OP_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
 STATE = re.compile(r"^[A-Z][A-Z_0-9]{1,63}$")
 MAX_REPOS = 16
 MAX_AGE_SECONDS = 900
@@ -111,7 +111,7 @@ class FactoryReadOnlyGateway:
         self._repository(repository)
         if not isinstance(source_sha, str) or SHA.fullmatch(source_sha) is None:
             raise StatusGatewayError("INVALID_EXPECTED_SOURCE_SHA")
-        if not isinstance(operation_id, str) or OP_ID.fullmatch(operation_id) is None:
+        if not isinstance(operation_id, str) or ".." in operation_id or OP_ID.fullmatch(operation_id) is None:
             raise StatusGatewayError("INVALID_OPERATION_ID")
         # The canonical AppLab store is the ONLY source of operation state.
         operation = self._applab_store.get_operation(operation_id)
