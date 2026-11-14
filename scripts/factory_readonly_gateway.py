@@ -67,12 +67,16 @@ class FactoryReadOnlyGateway:
 
     def repository_status(self, repository: str, *, now: datetime | None = None) -> dict[str, Any]:
         self._repository(repository)
+        # Explicit caller clocks are validated before provider access.
+        # With the default clock, sample AFTER the provider returns: its
+        # observed_at is captured at the end of the remote fetch.
+        if now is not None:
+            if not isinstance(now, datetime) or now.tzinfo is None:
+                raise StatusGatewayError("INVALID_CLOCK")
+            now = now.astimezone(timezone.utc)
+        record = self._github_head_reader(repository)
         if now is None:
             now = datetime.now(timezone.utc)
-        if not isinstance(now, datetime) or now.tzinfo is None:
-            raise StatusGatewayError("INVALID_CLOCK")
-        now = now.astimezone(timezone.utc)
-        record = self._github_head_reader(repository)
         if not isinstance(record, dict) or record.get("authenticated") is not True:
             raise StatusGatewayError("GITHUB_SOURCE_NOT_AUTHENTICATED")
         sha = record.get("head_sha")
