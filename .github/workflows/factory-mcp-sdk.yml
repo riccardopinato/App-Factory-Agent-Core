@@ -1,0 +1,27 @@
+name: Factory MCP SDK v2 read-only contract
+on:
+  pull_request:
+    paths:
+      - 'scripts/factory_mcp_readonly.py'
+      - 'tests/test_factory_mcp_readonly.py'
+      - '.github/workflows/factory-mcp-sdk.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sdk-inprocess:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install official MCP Python SDK v2.3.0
+        run: python -m pip install --disable-pip-version-check --no-input 'mcp==2.3.0'
+      - name: Validate official SDK version and in-process MCP tools
+        run: |
+          python -c 'import mcp.server; from mcp.server import MCPServer; from mcp.client import Client; print("MCP_SDK_AVAILABLE")'
+          python -m unittest discover -s tests -p 'test_factory_mcp_readonly.py' -v
