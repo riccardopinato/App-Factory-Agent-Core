@@ -114,7 +114,10 @@ class FactoryReadOnlyGateway:
         if not isinstance(operation_id, str) or ".." in operation_id or OP_ID.fullmatch(operation_id) is None:
             raise StatusGatewayError("INVALID_OPERATION_ID")
         # The canonical AppLab store is the ONLY source of operation state.
-        operation = self._applab_store.get_operation(operation_id)
+        try:
+            operation = self._applab_store.get_operation(operation_id)
+        except Exception as exc:
+            raise StatusGatewayError("APPLAB_READ_FAILED") from None
         if not isinstance(operation, dict):
             raise StatusGatewayError("OPERATION_NOT_PERSISTED")
         if (operation.get("operation_id") != operation_id
