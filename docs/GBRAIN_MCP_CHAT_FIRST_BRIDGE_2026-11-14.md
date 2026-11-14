@@ -61,3 +61,21 @@ References:
 - GBrain ChatGPT troubleshooting: https://github.com/garrytan/gbrain/blob/master/docs/mcp/CHATGPT.md
 - GBrain remote MCP: https://github.com/garrytan/gbrain/blob/master/docs/guides/remote-mcp.md
 - Core Goldens: `golden/governance/GOLDEN_AGENT_GOVERNANCE_v1.txt`, `GOLDEN_EVENT_DRIVEN_RECONCILIATION_v1.txt`.
+
+## Operational checkpoint 2026-11-14 — user-provided Windows receipt + actual ChatGPT read
+
+**Operator-reported Windows execution (not independently observed on the machine):**
+```text
+KEEPALIVE_TASK=NOT_INSTALLED name=AppFactory-GBrain-WSL-KeepAlive
+GBRAIN_LOCAL=OK version=0.60.554.0 engine=pglite
+KEEPALIVE_TASK=INSTALLED_AND_STARTED name=AppFactory-GBrain-WSL-KeepAlive
+GBRAIN_LOCAL=OK version=0.60.554.0 engine=pglite
+KEEPALIVE_TASK=Running name=AppFactory-GBrain-WSL-KeepAlive
+KEEPALIVE_LAST_RESULT=267009
+GBRAIN_LOCAL=OK version=0.60.554.0 engine=pglite
+```
+Task Scheduler result 267009 / 0x41301 = SCHED_S_TASK_RUNNING (success/running status), not a failed task. The downloaded/install-tested local script has NOT been byte-for-byte reconciled against the PR source; treat Windows result as USER_REPORTED, not DEVICE_VERIFIED for this repository's exact script SHA. No evidence of logoff/reboot/sleep persistence yet.
+
+**Authenticated connector evidence (tool-observed in ChatGPT, same conversation):** successful **read-only** `mcp__GBrain__recall` of prior App Factory memory fact, repeated success, and `context_pack` success. This establishes connector access for those two read surfaces now; it does not verify every MCP method or future uptime. Earlier generic internal errors resolved without documented OAuth credential changes. Recall reported `keyword_only_embedding_disabled` degradation; semantic search optimization is a separate follow-up.
+
+**Next acceptance:** compare installed file hash to source in branch, test at next Windows sign-in, record availability of public `/health` and repeat ChatGPT read after a cold boot; inspect recall embeddings only if semantic retrieval is needed. Retain PR in draft until review/Windows canary and full CI exact SHA.
