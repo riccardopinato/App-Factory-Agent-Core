@@ -47,6 +47,17 @@ class ConnectorReaderTests(unittest.TestCase):
         self.assertEqual(self.fetch.urls,
                          ["https://api.github.com/repos/riccardopinato/AppLab/branches/main"])
 
+    def test_real_default_clocks_do_not_reject_live_head_as_future(self):
+        reader = GitHubConnectorHeadReader(
+            trusted_fetch=self.fetch, branches={REPO: "main"})
+        gateway = FactoryReadOnlyGateway(
+            allowed_repositories=[REPO], github_head_reader=reader,
+            applab_store=Store())
+        result = gateway.repository_status(REPO)
+        self.assertEqual(result["head_sha"], SHA)
+        batch = gateway.repositories_status([REPO])
+        self.assertEqual(batch["repositories"][0]["head_sha"], SHA)
+
     def test_unapproved_repo_does_not_invoke_connector(self):
         with self.assertRaisesRegex(GitHubConnectorReaderError, "NOT_AUTHORIZED"):
             self.reader("riccardopinato/Notes-Ecosistema")
