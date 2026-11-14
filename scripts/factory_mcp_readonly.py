@@ -82,14 +82,14 @@ def build_mcp_server(service: ReadOnlyFactoryTools, *, memory_context=None):
         name="factory_repository_status",
         description="Read allowlisted GitHub HEAD metadata. Never certifies CI or device.",
     )
-    def factory_repository_status(repository: str) -> dict[str, Any]:
+    async def factory_repository_status(repository: str) -> dict[str, Any]:
         return service.repository_status(repository)
 
     @mcp.tool(
         name="factory_pr_evidence",
         description="Read PR-triggered CI evidence for an exact PR HEAD, not review authorization.",
     )
-    def factory_pr_evidence(repository: str, pr_number: int,
+    async def factory_pr_evidence(repository: str, pr_number: int,
                             expected_head_sha: str) -> dict[str, Any]:
         return service.pr_evidence(repository, pr_number, expected_head_sha)
 
@@ -97,7 +97,7 @@ def build_mcp_server(service: ReadOnlyFactoryTools, *, memory_context=None):
         name="factory_operation_checkpoint",
         description="Read one already-persisted AppLab operation state, never enqueue or run it.",
     )
-    def factory_operation_checkpoint(repository: str, operation_id: str,
+    async def factory_operation_checkpoint(repository: str, operation_id: str,
                                      source_sha: str) -> dict[str, Any]:
         return service.operation_checkpoint(repository, operation_id, source_sha)
 
@@ -115,7 +115,7 @@ def build_mcp_server(service: ReadOnlyFactoryTools, *, memory_context=None):
             name="factory_memory_context",
             description="Read bounded, untrusted GBrain context; never grants work or repository authority.",
         )
-        def factory_memory_context(query: str) -> dict[str, Any]:
+        async def factory_memory_context(query: str) -> dict[str, Any]:
             return memory_context.recall_context(query)
 
     return mcp
