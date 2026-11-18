@@ -1,3 +1,12 @@
+## Lane AI efficiency — optional five-stage pilot (18/11/2026)
+- [x] **SOURCE IMPLEMENTED:** RTK OSS command planner and output byte comparison; PyBreaker creation/guard; offline MarkItDown document adapter; per-tenant/SHA provenance-filtered read-only Mem0 adapter and exact ephemeral cache; local-first model route and LLMLingua candidate guard. [Implementation](scripts/agent_efficiency.py) · [fixtures](tests/test_agent_efficiency.py) · [provenance + rollout](docs/AGENT_EFFICIENCY_PILOT_2026-11-18.md).
+- [ ] **CI EXACT-HEAD:** all offline negative tests green on the PR head.
+- [ ] **WINDOWS RUNTIME:** install/pin approved OSS dependencies, verify RTK-OSS edition, enforce network isolation for document parsing, run with real trusted X10-010 grants and AppLab leases.
+- [ ] **SAFETY/RECOVERY:** injected 429/5xx circuit state, real lease expiry/replay and process crash/restart evidence; zero duplicate side effects.
+- [ ] **MEASURED SAVINGS:** actual tokenizer/input-output tokens, time and EUR where applicable, identical runner and correctness checks. No proxy billing or remote inference authorized here.
+- [ ] **MEMORY/CACHE/ROUTING:** GBrain is authoritative, Mem0 read-only pilot; cache exact static only; model routing and LLMLingua benchmarks never promote protected instructions, security decisions or uncertified output.
+- [ ] **DONOR/GOLDEN:** independent real consumer, capability deduplication and dedicated Core PR before any promotion.
+
 ## X10-013 — bounded orchestration on current AppLab/Agent Core source (12/11/2026)
 - [x] Source-level orchestration combines X10-010/011/012 with AppLab WorkGraph injection; persisted lease ownership/expires check and callback-boundary fence; contract/replay tests in CI, no second scheduler.
 - [ ] Real trusted delivery binding, live AppLab/Windows worker, end-to-end crash+recovery, physical consumer tests and independent authenticated approval still NOT_VERIFIED; no automatic PR merge/release.
