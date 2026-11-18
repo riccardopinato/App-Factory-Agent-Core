@@ -24,6 +24,11 @@ Consumers proposti: Developer Agent, QA Agent, Research/Donor Agent, Finance Age
 - **PROPOSTO:** worker multi-repo affidabile, tool adapters, test reali, PR, build, recovery e uso in Finance.
 - **ESCLUSO:** esecuzione di trading live, merge non autorizzato, rilancio autonomo di ChatGPT senza runner, accesso incontrollato ai file/secret.
 
+## Agent efficiency pilot (18/11/2026)
+- [Pilot OSS/contesto/costi](docs/AGENT_EFFICIENCY_PILOT_2026-11-18.md): cinque stage con adapter opzionali in [`agent_efficiency.py`](scripts/agent_efficiency.py), negative fixtures in [`test_agent_efficiency.py`](tests/test_agent_efficiency.py).
+- RTK-OSS, PyBreaker, MarkItDown, memoria read-only Mem0/GBrain, cache esatta, routing locale-first e compressione LLMLingua sperimentale; **SOURCE-ONLY / RUNNER WINDOWS NOT_VERIFIED**.
+- Nessuna nuova API a pagamento, nessun tool hook globale, nessuna certificazione Golden né modifica ai consumer: prima servono prove di installazione, fault injection e risparmi reali.
+
 ## Affidabilità e riuso (11/11/2026)
 - [Helper offline di reconciliation](scripts/context_reliability.py), con test negativi in [tests/test_context_reliability.py](tests/test_context_reliability.py), CI verde [PR #12](https://github.com/riccardopinato/App-Factory-Agent-Core/pull/12).
 - [Recovery/rollback playbook](docs/CONTEXT_SYNC_RECOVERY_PLAYBOOK.md), [protocollo review semantica](docs/SEMANTIC_REVIEW_PROTOCOL.md) e [candidate admission](docs/CONTEXT_SYNC_REUSE_ADMISSION.md). Nessun Golden promosso.
