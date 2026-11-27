@@ -165,6 +165,21 @@ class SpecLiteBindingTests(unittest.TestCase):
         self.assertDeny("AGENT_GATEWAY_DENIED:TRUSTED_APPROVAL_REQUIRED", m=m, j=job(mode="propose_diff"),
                         trusted_product_decision=lambda _: True)
 
+    def test_write_binding_requires_matching_applab_capability(self):
+        m = manifest()
+        m["approval"] = {"status": "APPROVED", "decision_ref": "https://github.com/a/b/issues/42"}
+        m["requirements"][0]["status"] = "APPROVED"
+        j = job(mode="propose_diff")
+        now = datetime.now(timezone.utc)
+        signed = {"schema_version": 1, "job_sha256": job_digest(j), "repository": REPO,
+                  "source_sha": SOURCE, "mode": "propose_diff",
+                  "allowed_paths": j["target"]["allowed_paths"], "reviewer": "test-maintainer",
+                  "review_url": "https://github.com/a/b/pull/42",
+                  "expires_at": (now + timedelta(minutes=10)).isoformat().replace("+00:00", "Z")}
+        signed["hmac_sha256"] = hmac.new(KEY, canonical(signed), hashlib.sha256).hexdigest()
+        self.assertDeny("WORKITEM_WRITE_CAPABILITY_REQUIRED", m=m, j=j, receipt=signed,
+                        verifier_key=KEY, trusted_product_decision=lambda _: True)
+
     def test_valid_signed_write_remains_trace_only_not_dispatch(self):
         m = manifest()
         m["approval"] = {"status": "APPROVED", "decision_ref": "https://github.com/a/b/issues/42"}
@@ -177,7 +192,9 @@ class SpecLiteBindingTests(unittest.TestCase):
                   "review_url": "https://github.com/a/b/pull/42",
                   "expires_at": (now + timedelta(minutes=10)).isoformat().replace("+00:00", "Z")}
         signed["hmac_sha256"] = hmac.new(KEY, canonical(signed), hashlib.sha256).hexdigest()
-        result = bind(m=m, j=j, receipt=signed, verifier_key=KEY,
+        w = work_item()
+        w["authority_envelope"]["allowed_capabilities"].append("ALLOW_CODE_EDIT")
+        result = bind(m=m, j=j, w=w, receipt=signed, verifier_key=KEY,
                       trusted_product_decision=lambda _: True)
         self.assertFalse(result["dispatch_performed"])
         self.assertFalse(result["runtime_verified"])
