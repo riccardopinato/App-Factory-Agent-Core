@@ -117,7 +117,7 @@ class OrchestratorTests(unittest.TestCase):
         changed["resolved_sha"] = "b" * 40
         with self.assertRaisesRegex(OrchestrationError, "CROSS_JOB_LEASE_MISMATCH"):
             self.orch.prepare_claim(JOB, POLICY, "op_x10", changed, now_ts=1)
-        self.assertEqual(self.calls, [])
+        self.assertEqual(self.queue.items, {})
 
     def test_fsl_pilot_no_self_approved_write_job(self):
         write = copy.deepcopy(JOB)
