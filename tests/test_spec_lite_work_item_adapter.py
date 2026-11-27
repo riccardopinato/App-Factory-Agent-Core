@@ -92,6 +92,31 @@ class SpecLiteBindingTests(unittest.TestCase):
         self.assertDeny("SPEC_SCOPE_DENIED", j=job(paths=["scripts/private.py"]))
         self.assertDeny("UNSAFE_JOB_PATH", j=job(paths=["../secret"]))
 
+    def test_forbidden_nested_directory_blocks_parent_job_scope(self):
+        m = manifest()
+        m["scope"]["allowed_paths"] = ["docs/**"]
+        m["scope"]["forbidden_paths"] = ["docs/private/**"]
+        j = job(paths=["docs"])
+        self.assertDeny("SPEC_SCOPE_DENIED", m=m, j=j)
+
+    def test_forbidden_exact_file_blocks_recursive_parent_scope(self):
+        m = manifest()
+        m["scope"]["allowed_paths"] = ["docs/**"]
+        m["scope"]["forbidden_paths"] = ["docs/secrets.txt"]
+        self.assertDeny("SPEC_SCOPE_DENIED", m=m, j=job(paths=["docs"]))
+
+    def test_safe_sibling_of_forbidden_tree_is_accepted(self):
+        m = manifest()
+        m["scope"]["allowed_paths"] = ["docs/**"]
+        m["scope"]["forbidden_paths"] = ["docs/private/**"]
+        p = bind(m=m, j=job(paths=["docs/public"]))
+        self.assertEqual(p["authority"], "TRACE_ONLY")
+
+    def test_job_wildcard_untrusted_scope_refused(self):
+        m = manifest()
+        m["scope"]["allowed_paths"] = ["docs/**"]
+        self.assertDeny("UNSAFE_JOB_PATH", m=m, j=job(paths=["docs/**"]))
+
     def test_source_sha_mismatch_refused(self):
         m = manifest()
         m["target"]["source_sha"] = "b" * 40
