@@ -44,6 +44,14 @@ def _covered(path: str, pattern: str) -> bool:
     return path == pattern
 
 
+def _overlaps_recursive_scope(job_path: str, excluded: str) -> bool:
+    """A requested directory grants recursive access; descendants also matter."""
+    excluded_root = excluded[:-3] if excluded.endswith("/**") else excluded
+    return (job_path == excluded_root
+            or job_path.startswith(excluded_root + "/")
+            or excluded_root.startswith(job_path + "/"))
+
+
 def project_spec_job_binding(
     manifest: dict[str, Any],
     job: dict[str, Any],
@@ -104,12 +112,13 @@ def project_spec_job_binding(
     paths = job.get("target", {}).get("allowed_paths", [])
     if not isinstance(allow, list) or not allow or not isinstance(deny, list) or not isinstance(paths, list) or not paths:
         raise SpecBindingError("SCOPE_MISSING")
-    if any(not isinstance(p, str) or not safe_path(p) for p in paths):
+    if any(not isinstance(p, str) or not safe_path(p) or "*" in p for p in paths):
         raise SpecBindingError("UNSAFE_JOB_PATH")
-    if any(not isinstance(p, str) or not p or ".." in p.split("/") or p.startswith("/") or "\\" in p for p in allow + deny):
+    if any(not isinstance(p, str) or not p or ".." in p.split("/") or p.startswith("/") or "\\" in p
+           or ("*" in p and not p.endswith("/**")) for p in allow + deny):
         raise SpecBindingError("UNSAFE_SPEC_PATH")
     if any(not any(_covered(p, allowed) for allowed in allow)
-           or any(_covered(p, blocked) for blocked in deny) for p in paths):
+           or any(_overlaps_recursive_scope(p, blocked) for blocked in deny) for p in paths):
         raise SpecBindingError("SPEC_SCOPE_DENIED")
 
     requirements = manifest.get("requirements")
