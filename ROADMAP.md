@@ -1,3 +1,7 @@
+## 2026-11-27 — Spec Lite delta/source coverage: product scope unchanged
+- [x] PR [#38](https://github.com/riccardopinato/App-Factory-Agent-Core/pull/38), main `8cad58bc7aace24b91647bd1d994228b3259ed64`, [postmerge CI PASS](https://github.com/riccardopinato/App-Factory-Agent-Core/actions/runs/45984356385): reject unmapped/duplicated required checks, record optional unverified delta lineage in read-only WorkItem projection with negative tests.
+- [ ] E2E Windows worker/AppLab durable operation, actual approved mutation and time/token savings: NOT_VERIFIED. See `docs/X10_SPEC_LITE_WORKITEM_BRIDGE_20261127.md`. This pilot does not add a queue, Golden or new product behavior.
+
 ## X10-013 — bounded orchestration on current AppLab/Agent Core source (12/11/2026)
 - [x] Source-level orchestration combines X10-010/011/012 with AppLab WorkGraph injection; persisted lease ownership/expires check and callback-boundary fence; contract/replay tests in CI, no second scheduler.
 - [ ] Real trusted delivery binding, live AppLab/Windows worker, end-to-end crash+recovery, physical consumer tests and independent authenticated approval still NOT_VERIFIED; no automatic PR merge/release.

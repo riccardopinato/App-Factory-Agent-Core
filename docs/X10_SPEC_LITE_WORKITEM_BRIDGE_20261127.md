@@ -14,3 +14,13 @@
 **Tests:** `python3 -m unittest discover -s tests -p test_spec_lite_work_item_adapter.py -v` + all existing source tests via `.github/workflows/validate.yml`. Negative vectors include replay/change, out-of-scope paths, path traversal, wrong SHA, missing AC/evidence tests, unvalidated WorkItem, unauthorized capabilities, missing independent product approval, unsigned job. One signed test receipt is synthetic, verifies the existing gateway and does not authorize actual GitHub writes.
 
 **Accept/reject:** SOURCE+CI only. Do not equate test fixtures with a real Windows worker, AppLab durable-queue E2E, physical device, real user-approved write or production certification.
+
+## OpenSpec-inspired incremental delta/coverage reconciliation — 27 November 2026
+
+**Current implemented source:** `8cad58bc7aace24b91647bd1d994228b3259ed64` (PR #38 merged, postmerge CI [SUCCESS](https://github.com/riccardopinato/App-Factory-Agent-Core/actions/runs/45984356385)). This is a source/CI evidence level only.
+
+- Mandatory checks are now bidirectionally linked: every acceptance criterion selects a required check AND every required check has at least one AC. An otherwise unrepresented `SOURCE_TEST` is refused; a duplicate required check is also refused.
+- Optional per-requirement ADDED/MODIFIED/REMOVED/RENAMED lineage is validated structurally and projected into the existing read-only `FSL_WORK_ITEM_TRACE_PROJECTION` with `previous_state_verified=False`; it cannot forge historical evidence or authorize an agent job.
+- Existing AppLab WorkItem, immutable source/operation identity, signed gateway approval, idempotency/replay and no-dispatch boundaries remain authoritative.
+- The previous Step 4 proposal fixture is historical and was **not retroactively modified**. Its previously unmapped required SOURCE_TEST is a source finding; current tests normalize that proposed fixture only in memory to verify the improved admission contract.
+- Windows runtime, actual trusted durable E2E, physical device, performance/time/token gains and production remain NOT_VERIFIED. No new Golden, scheduler, CLI, queue or automatic fleet rollout.
