@@ -110,7 +110,7 @@ class OrchestratorTests(unittest.TestCase):
         wider["target"]["allowed_paths"] = ["secrets"]
         with self.assertRaisesRegex(OrchestrationError, "JOB_NOT_AUTHORIZED"):
             self.orch.prepare_claim(wider, POLICY, "op_x10", self.claim, now_ts=1)
-        self.assertEqual(self.queue.items, [])
+        self.assertEqual(self.queue.items, {})
 
     def test_fsl_pilot_wrong_immutable_source_rejected_before_workgraph(self):
         changed = dict(self.claim)
@@ -129,7 +129,7 @@ class OrchestratorTests(unittest.TestCase):
             work_item_factory=graph_factory)
         with self.assertRaisesRegex(OrchestrationError, "JOB_NOT_AUTHORIZED"):
             guarded.prepare_claim(write, POLICY, "op_x10", self.claim, now_ts=1)
-        self.assertEqual(self.queue.items, [])
+        self.assertEqual(self.queue.items, {})
 
     def test_duplicate_delivery_replays_one_applab_operation(self):
         a = self.orch.stage(JOB, POLICY, "op_x10", now_ts=1)
