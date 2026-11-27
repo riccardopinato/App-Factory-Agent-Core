@@ -1,0 +1,36 @@
+name: Factory gateway — pinned AppLab store integration
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/factory_readonly_gateway.py'
+      - 'scripts/factory_github_connector_reader.py'
+      - 'tests/test_factory_applab_real_store.py'
+      - 'tests/test_factory_readonly_gateway.py'
+      - 'tests/test_factory_github_connector_reader.py'
+      - '.github/workflows/gateway-applab-real-store.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pinned-store-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout Agent Core
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout public AppLab at exact reviewed commit (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: riccardopinato/AppLab
+          ref: 0b45e4a474fe958a141430a6447c50ccf6d114b2
+          path: upstream-applab
+          persist-credentials: false
+      - name: Verify actual AppLab SQLiteShadowStore through gateway
+        run: |
+          APPLAB_CHECKOUT="$GITHUB_WORKSPACE/upstream-applab" \
+            python3 -m unittest discover -s tests -p 'test_factory_applab_real_store.py' -v
