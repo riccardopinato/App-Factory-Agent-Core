@@ -95,6 +95,42 @@ class OrchestratorTests(unittest.TestCase):
         self.queue.lease = {**self.claim, "state": "LEASED",
                             "leased_by": "gha-trusted"}
 
+    def test_fsl_pilot_read_only_workitem_cannot_claim_mutation_or_completion(self):
+        intent = self.orch.prepare_claim(JOB, POLICY, "op_x10", self.claim, now_ts=1)
+        self.assertEqual(intent["resolved_sha"], SHA)
+        self.assertEqual(intent["work_item"]["authority"], "ORCHESTRATION_ONLY")
+        capabilities = intent["work_item"]["authority_envelope"]["allowed_capabilities"]
+        self.assertEqual(capabilities, ["READ_REPOSITORY", "READ_EVIDENCE"])
+        self.assertFalse(intent["runtime_verified"])
+        self.assertFalse(intent["dispatch_performed"])
+        self.assertFalse(intent["auto_merge_performed"])
+
+    def test_fsl_pilot_untrusted_path_expansion_denied_without_worker(self):
+        wider = copy.deepcopy(JOB)
+        wider["target"]["allowed_paths"] = ["secrets"]
+        with self.assertRaisesRegex(OrchestrationError, "JOB_NOT_AUTHORIZED"):
+            self.orch.prepare_claim(wider, POLICY, "op_x10", self.claim, now_ts=1)
+        self.assertEqual(self.queue.items, {})
+
+    def test_fsl_pilot_wrong_immutable_source_rejected_before_workgraph(self):
+        changed = dict(self.claim)
+        changed["resolved_sha"] = "b" * 40
+        with self.assertRaisesRegex(OrchestrationError, "CROSS_JOB_LEASE_MISMATCH"):
+            self.orch.prepare_claim(JOB, POLICY, "op_x10", changed, now_ts=1)
+        self.assertEqual(self.queue.items, {})
+
+    def test_fsl_pilot_no_self_approved_write_job(self):
+        write = copy.deepcopy(JOB)
+        write["mode"] = "propose_diff"
+        guarded = BoundedAppLabOrchestrator(
+            AppLabQueueBridge(self.store, self.queue),
+            binding_verifier=lambda digest, operation_id, operation:
+                digest == job_digest(write),
+            work_item_factory=graph_factory)
+        with self.assertRaisesRegex(OrchestrationError, "JOB_NOT_AUTHORIZED"):
+            guarded.prepare_claim(write, POLICY, "op_x10", self.claim, now_ts=1)
+        self.assertEqual(self.queue.items, {})
+
     def test_duplicate_delivery_replays_one_applab_operation(self):
         a = self.orch.stage(JOB, POLICY, "op_x10", now_ts=1)
         b = self.orch.stage(JOB, POLICY, "op_x10", now_ts=2)
