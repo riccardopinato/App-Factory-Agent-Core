@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "spec_id": "FSL-20261127-AGENT-ORCH",
+  "mode": "STANDARD",
+  "factory": {
+    "repository": "riccardopinato/App-Factory-Core",
+    "sha": "f8b9f550c544735237f19cdd723bd2df667ceee6",
+    "resolver": "CURRENT.yaml"
+  },
+  "target": {
+    "repository": "riccardopinato/App-Factory-Agent-Core",
+    "source_sha": "f2b4c28cc3a9afa4ef39c6d32fe0a8ef14dac512"
+  },
+  "canonical_refs": {
+    "factory_current": {
+      "repository": "riccardopinato/App-Factory-Core",
+      "sha": "f8b9f550c544735237f19cdd723bd2df667ceee6",
+      "path": "CURRENT.yaml"
+    },
+    "product_bible": {
+      "repository": "riccardopinato/App-Factory-Agent-Core",
+      "sha": "f2b4c28cc3a9afa4ef39c6d32fe0a8ef14dac512",
+      "path": "PRODUCT_BIBLE.md"
+    },
+    "roadmap": {
+      "repository": "riccardopinato/App-Factory-Agent-Core",
+      "sha": "f2b4c28cc3a9afa4ef39c6d32fe0a8ef14dac512",
+      "path": "ROADMAP.md"
+    },
+    "agents": {
+      "repository": "riccardopinato/App-Factory-Agent-Core",
+      "sha": "f2b4c28cc3a9afa4ef39c6d32fe0a8ef14dac512",
+      "path": "AGENTS.md"
+    },
+    "goldens": []
+  },
+  "scope": {
+    "includes": [
+      "Retrospective source contract validation for existing bounded AppLab orchestration adapter",
+      "Unit-test read-only WorkItem, immutable SHA, scope and receipt denial behavior"
+    ],
+    "excludes": [
+      "Live Windows worker",
+      "New scheduler, queue, lease, database or LLM agent runtime",
+      "Real GitHub write, merge, billing or provider access"
+    ],
+    "allowed_paths": [
+      "tests/test_bounded_applab_orchestrator.py",
+      "docs/spec_lite/agent-orchestration-contract/**"
+    ],
+    "forbidden_paths": [
+      "scripts/**",
+      "contracts/**",
+      "automation/**"
+    ]
+  },
+  "risk": {
+    "data_loss": false,
+    "security": false,
+    "billing": false,
+    "native_lifecycle": false,
+    "migration": false,
+    "sensitive_data": false,
+    "release": false
+  },
+  "requirements": [
+    {
+      "id": "FR-001",
+      "text": "The existing source-only AppLab orchestration contract must map read-only jobs and deny untrusted source, scope, and write authority while retaining AppLab as the sole durable scheduler.",
+      "status": "PROPOSED",
+      "conflicts_with": [],
+      "acceptance": [
+        {
+          "id": "AC-001",
+          "criterion": "A read-only AppLab WorkItem preserves resolved SHA, includes no code-edit permission and cannot declare runtime verification, dispatch or merge.",
+          "evidence_type": "UNIT_TEST"
+        },
+        {
+          "id": "AC-002",
+          "criterion": "An untrusted job that expands allowed paths beyond trusted policy is denied before scheduling or worker execution.",
+          "evidence_type": "UNIT_TEST"
+        },
+        {
+          "id": "AC-003",
+          "criterion": "A lease claim with a mismatched immutable source SHA is rejected before a WorkItem is issued.",
+          "evidence_type": "UNIT_TEST"
+        },
+        {
+          "id": "AC-004",
+          "criterion": "A write attempt without an independently signed approval receipt is denied before any queue or workspace effects.",
+          "evidence_type": "UNIT_TEST"
+        }
+      ]
+    }
+  ],
+  "validation": {
+    "required_checks": [
+      "UNIT_TEST",
+      "SOURCE_TEST"
+    ],
+    "manual_gate": false,
+    "rollback_plan": null
+  },
+  "approval": {
+    "status": "PROPOSED",
+    "decision_ref": null
+  },
+  "verification": {
+    "status": "NOT_VERIFIED",
+    "evidence_links": []
+  }
+}
