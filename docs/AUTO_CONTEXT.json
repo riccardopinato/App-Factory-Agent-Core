@@ -3,24 +3,24 @@
   "sources": [
     {
       "branch": "main",
-      "commit_date": "2026-11-25T09:59:38Z",
+      "commit_date": "2026-11-27T14:23:40Z",
       "purpose": "Governance Master e Golden",
       "repository": "riccardopinato/App-Factory-Core",
-      "sha": "842dfa073451ec247308ccb4afb8ead5349bcbd4"
+      "sha": "a68d5ab2a45c30b1f46a91eb79f32685b81df73b"
     },
     {
       "branch": "main",
-      "commit_date": "2026-11-24T14:09:09Z",
+      "commit_date": "2026-11-27T09:43:27Z",
       "purpose": "QA e affidabilità agentica",
       "repository": "riccardopinato/AppLab",
-      "sha": "817a65dfdeb53750ce2ec4fb224a691dc29b8953"
+      "sha": "0b498ef04458d56a17318823efa9e77f31cd8e4a"
     },
     {
       "branch": "main",
-      "commit_date": "2026-11-26T14:48:56Z",
+      "commit_date": "2026-11-27T08:27:43Z",
       "purpose": "Idee e capability",
       "repository": "riccardopinato/Idee-app-Archivi-riferimenti",
-      "sha": "87a37a5114a40548a23763a133bbf8b14f7c6513"
+      "sha": "559a13508558948ce57e91fe14df492328bdeb0d"
     }
   ]
 }
