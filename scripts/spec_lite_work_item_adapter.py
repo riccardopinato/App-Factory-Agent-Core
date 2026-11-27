@@ -128,15 +128,47 @@ def project_spec_job_binding(
     required = checks.get("required_checks")
     if not isinstance(required, list) or not required or not set(required).issubset(CHECKS):
         raise SpecBindingError("TEST_POLICY_MISSING")
+    if len(set(required)) != len(required):
+        raise SpecBindingError("DUPLICATE_REQUIRED_CHECK")
     ids: set[str] = set()
     ac_ids: set[str] = set()
     criteria: list[dict[str, str]] = []
+    delta_lineage: list[dict[str, Any]] = []
     for req in requirements:
         if not isinstance(req, dict) or not RID.fullmatch(str(req.get("id",""))) or req["id"] in ids:
             raise SpecBindingError("DUPLICATE_OR_INVALID_REQUIREMENT")
         ids.add(req["id"])
         if req.get("conflicts_with"):
             raise SpecBindingError("UNRESOLVED_REQUIREMENT_CONFLICT")
+        change = req.get("delta")
+        if change is not None:
+            if not isinstance(change, dict) or set(change) != {"operation", "previous", "reason"}:
+                raise SpecBindingError("INVALID_REQUIREMENT_DELTA")
+            operation, previous = change.get("operation"), change.get("previous")
+            if operation not in {"ADDED", "MODIFIED", "REMOVED", "RENAMED"}:
+                raise SpecBindingError("INVALID_REQUIREMENT_DELTA")
+            if not isinstance(change.get("reason"), str) or len(change["reason"]) < 12:
+                raise SpecBindingError("INVALID_REQUIREMENT_DELTA")
+            if operation == "ADDED":
+                if previous is not None:
+                    raise SpecBindingError("ADDED_DELTA_WITH_PREVIOUS")
+            else:
+                if (not isinstance(previous, dict)
+                    or set(previous) != {"spec_id", "requirement_id", "source_sha"}
+                    or not SPEC.fullmatch(str(previous.get("spec_id", "")))
+                    or not RID.fullmatch(str(previous.get("requirement_id", "")))
+                    or not SHA.fullmatch(str(previous.get("source_sha", "")))):
+                    raise SpecBindingError("PREVIOUS_REQUIREMENT_IDENTITY_REQUIRED")
+                if (previous["spec_id"] == manifest["spec_id"]
+                    and previous["requirement_id"] == req["id"]
+                    and previous["source_sha"] == expected_source_sha):
+                    raise SpecBindingError("DELTA_NOT_PINNED_TO_PRIOR_STATE")
+            if operation == "REMOVED" and manifest["mode"] == "FAST":
+                raise SpecBindingError("REMOVAL_NOT_FAST")
+            delta_lineage.append({
+                "requirement_id": req["id"], "operation": operation,
+                "previous": previous, "previous_state_verified": False
+            })
         ac_list = req.get("acceptance")
         if not isinstance(ac_list, list) or not ac_list:
             raise SpecBindingError("ACCEPTANCE_MISSING")
@@ -150,6 +182,10 @@ def project_spec_job_binding(
                 raise SpecBindingError("ACCEPTANCE_TEST_GAP")
             criteria.append({"requirement_id": req["id"], "acceptance_id": ac["id"],
                              "required_check": ac["evidence_type"]})
+
+    # A declared required kind without an AC may falsely suggest complete coverage.
+    if set(required) - {criterion["required_check"] for criterion in criteria}:
+        raise SpecBindingError("REQUIRED_CHECK_UNMAPPED")
 
     write = job.get("mode") in MUTATING
     approval = manifest.get("approval", {})
@@ -197,6 +233,7 @@ def project_spec_job_binding(
         "repository": target["repository"], "source_sha": expected_source_sha,
         "work_item_id": work_item["work_item_id"], "operation_id": work_item["operation_id"],
         "acceptance": criteria, "required_checks": sorted(set(required)),
+        "delta_lineage": delta_lineage, "previous_state_verified": False,
         "authority": "TRACE_ONLY", "source_verified": False,
         "runtime_verified": False, "side_effects_performed": False,
         "dispatch_performed": False, "certified": False,
