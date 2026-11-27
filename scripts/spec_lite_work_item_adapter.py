@@ -180,6 +180,9 @@ def project_spec_job_binding(
     permissions = work_item.get("authority_envelope", {}).get("allowed_capabilities", [])
     if not isinstance(permissions, list) or (not write and NO_READ_EDIT.intersection(permissions)):
         raise SpecBindingError("WORKITEM_UNEXPECTED_CAPABILITIES")
+    if (job["mode"] == "propose_diff" and "ALLOW_CODE_EDIT" not in permissions
+        or job["mode"] == "prepare_pr" and "CREATE_DRAFT_PR" not in permissions):
+        raise SpecBindingError("WORKITEM_WRITE_CAPABILITY_REQUIRED")
 
     fingerprint = _digest(manifest)
     idem = job.get("idempotency_key")
