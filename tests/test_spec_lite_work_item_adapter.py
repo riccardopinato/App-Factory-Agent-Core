@@ -25,6 +25,12 @@ def manifest() -> dict:
     src["canonical_refs"]["product_bible"]["sha"] = SOURCE
     src["canonical_refs"]["roadmap"]["sha"] = SOURCE
     src["canonical_refs"]["agents"]["sha"] = SOURCE
+    # Normalize historical PROPOSED fixture in memory; do not rewrite archived pilot evidence.
+    # SOURCE_TEST was declared in the historical manifest but not mapped to an AC.
+    src["requirements"][0]["acceptance"].append({
+        "id": "AC-005", "criterion": "Source-level projection preserves work item identity.",
+        "evidence_type": "SOURCE_TEST",
+    })
     return src
 
 
@@ -67,10 +73,65 @@ class SpecLiteBindingTests(unittest.TestCase):
             bind(**args)
         self.assertIn(fragment, str(caught.exception))
 
+
+    def test_existing_historical_unmapped_required_kind_is_rejected(self):
+        raw = json.loads((ROOT / "docs/spec_lite/agent-orchestration-contract/manifest.json").read_text())
+        m = manifest()
+        m["requirements"][0]["acceptance"] = raw["requirements"][0]["acceptance"]
+        self.assertDeny("REQUIRED_CHECK_UNMAPPED", m=m)
+
+    def test_duplicate_required_kind_is_rejected(self):
+        m = manifest()
+        m["validation"]["required_checks"].append("UNIT_TEST")
+        self.assertDeny("DUPLICATE_REQUIRED_CHECK", m=m)
+
+    def test_delta_lineage_is_traced_but_not_trusted(self):
+        m = manifest()
+        m["requirements"][0]["delta"] = {
+            "operation": "MODIFIED",
+            "previous": {"spec_id": m["spec_id"], "requirement_id": "FR-001",
+                         "source_sha": "1" * 40},
+            "reason": "Source-only delta lineage comparison across bounded adapters.",
+        }
+        projection = bind(m=m)
+        self.assertEqual(projection["delta_lineage"][0]["operation"], "MODIFIED")
+        self.assertEqual(projection["delta_lineage"][0]["previous"]["source_sha"], "1"*40)
+        self.assertFalse(projection["previous_state_verified"])
+
+    def test_delta_without_prior_identity_is_denied(self):
+        m = manifest()
+        m["requirements"][0]["delta"] = {
+            "operation": "MODIFIED", "previous": None,
+            "reason": "Source-only comparison without canonical record must block.",
+        }
+        self.assertDeny("PREVIOUS_REQUIREMENT_IDENTITY_REQUIRED", m=m)
+
+    def test_delta_with_unpinned_current_state_is_denied(self):
+        m = manifest()
+        m["requirements"][0]["delta"] = {
+            "operation": "MODIFIED",
+            "previous": {"spec_id": m["spec_id"], "requirement_id": "FR-001",
+                         "source_sha": SOURCE},
+            "reason": "Current source reference cannot masquerade as prior state.",
+        }
+        self.assertDeny("DELTA_NOT_PINNED_TO_PRIOR_STATE", m=m)
+
+    def test_delta_replay_conflict_tracks_prior_identity(self):
+        m = manifest()
+        m["requirements"][0]["delta"] = {
+            "operation": "ADDED", "previous": None,
+            "reason": "New optional traceable requirement with no canonical predecessor.",
+        }
+        first = bind(m=m)
+        changed = copy.deepcopy(m)
+        changed["requirements"][0]["delta"]["reason"] += " changed"
+        self.assertDeny("REPLAY_IDENTITY_CONFLICT", m=changed,
+                        trusted_prior_binding=first)
+
     def test_readonly_projection_has_no_runtime_or_approval_claim(self):
         p = bind()
         self.assertEqual(p["authority"], "TRACE_ONLY")
-        self.assertEqual(len(p["acceptance"]), 4)
+        self.assertEqual(len(p["acceptance"]), 5)
         self.assertFalse(p["dispatch_performed"])
         self.assertFalse(p["runtime_verified"])
         self.assertFalse(p["certified"])
